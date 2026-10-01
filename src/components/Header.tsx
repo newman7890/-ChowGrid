@@ -126,15 +126,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )}
 
-            {/* Settings Quick Access Button */}
-            <button
-              onClick={onOpenSettings}
-              title="Account & App Settings"
-              className="p-1.5 sm:p-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl sm:rounded-2xl transition border border-transparent hover:border-slate-200 flex-shrink-0"
-            >
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
-
             {/* User Account / Login Button */}
             <div className="relative flex-shrink-0">
               {currentUser ? (
