@@ -176,10 +176,118 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-8 flex flex-col md:flex-row min-h-[580px]">
-        {/* Left Settings Sidebar */}
-        <div className="w-full md:w-64 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col justify-between">
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-4 sm:my-8 flex flex-col md:flex-row min-h-[520px] md:min-h-[580px] max-h-[92vh] md:max-h-[85vh]">
+        {/* Mobile Header (Hidden on Desktop) */}
+        <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 font-['Outfit']">Settings</h3>
+            <p className="text-[11px] text-slate-500">Preferences & account settings</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Mobile Horizontal Tab Strip (Hidden on Desktop) */}
+        <div className="md:hidden flex items-center gap-1.5 p-2.5 bg-slate-50 border-b border-slate-200 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+              activeTab === 'profile'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            <span>Profile</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('addresses')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+              activeTab === 'addresses'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Addresses</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+              activeTab === 'payments'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            <span>Payments</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+              activeTab === 'notifications'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span>Alerts</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('seller_application')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+              activeTab === 'seller_application'
+                ? 'bg-orange-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <ChefHat className="w-3.5 h-3.5" />
+            <span>Apply as Seller</span>
+            {myApplication && (
+              <span className="text-[9px] px-1 py-0.2 rounded font-bold uppercase bg-amber-200 text-amber-900">
+                {myApplication.status}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              onClose();
+              setIsAuthModalOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 bg-orange-50 text-orange-700 border border-orange-200"
+          >
+            <Store className="w-3.5 h-3.5" />
+            <span>Vendor Portal</span>
+          </button>
+
+          {role === 'vendor' && (
+            <button
+              onClick={() => setActiveTab('store_settings')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
+                activeTab === 'store_settings'
+                  ? 'bg-orange-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200'
+              }`}
+            >
+              <Store className="w-3.5 h-3.5" />
+              <span>Store</span>
+            </button>
+          )}
+        </div>
+
+        {/* Desktop Left Settings Sidebar (Hidden on Mobile) */}
+        <div className="hidden md:flex w-64 bg-slate-50 border-r border-slate-200 p-6 flex-col justify-between flex-shrink-0">
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">Settings</h3>
@@ -295,10 +403,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Right Settings Content */}
-        <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[80vh] md:max-h-[600px]">
+        <div className="flex-1 p-4 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[calc(92vh-110px)] md:max-h-[85vh]">
           <div>
-            {/* Top Close Button */}
-            <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+            {/* Desktop Top Close Button */}
+            <div className="hidden md:flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
               <h4 className="text-lg font-bold text-slate-900 font-['Outfit']">
                 {activeTab === 'profile' && 'Personal Profile'}
                 {activeTab === 'addresses' && 'Saved Delivery Locations'}
