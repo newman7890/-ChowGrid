@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { UserRole } from '../types';
 import chowgridLogo from '../assets/chowgrid-logo.png';
 import {
   X,
@@ -14,13 +13,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Store,
-  ShieldCheck,
   ArrowRight,
   Loader2,
   KeyRound,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 
 export const AuthModal: React.FC = () => {
@@ -31,15 +26,12 @@ export const AuthModal: React.FC = () => {
     registerCustomer,
     loginWithOAuth,
     resetPassword,
-    users,
-    loginAsUser,
   } = useApp();
 
   // Tab & Flow states
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
-  const [role, setRole] = useState<UserRole>('customer');
+  const [isVendorMode, setIsVendorMode] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [showDemoProfiles, setShowDemoProfiles] = useState(false);
 
   // Form Fields
   const [identifier, setIdentifier] = useState('');
@@ -61,6 +53,7 @@ export const AuthModal: React.FC = () => {
     setIsAuthModalOpen(false);
     setFeedback(null);
     setIsForgotPassword(false);
+    setIsVendorMode(false);
     setPassword('');
   };
 
@@ -76,7 +69,8 @@ export const AuthModal: React.FC = () => {
     setFeedback(null);
 
     try {
-      const res = await loginWithCredentials(identifier, password, role);
+      const targetRole = isVendorMode ? 'vendor' : 'customer';
+      const res = await loginWithCredentials(identifier, password, targetRole);
       if (res.success) {
         setFeedback({ success: true, text: res.message });
         setTimeout(() => {
@@ -110,7 +104,7 @@ export const AuthModal: React.FC = () => {
 
     try {
       const formattedPhone = phone.startsWith('+233') ? phone : `+233 ${phone.replace(/^0/, '')}`;
-      const res = await registerCustomer(fullName, formattedPhone, email, address, password, role);
+      const res = await registerCustomer(fullName, formattedPhone, email, address, password, 'customer');
       if (res.success) {
         setFeedback({ success: true, text: res.message });
         setTimeout(() => {
@@ -200,8 +194,10 @@ export const AuthModal: React.FC = () => {
                 <p className="text-xs text-slate-300">
                   {isForgotPassword
                     ? 'Account Recovery & Password Reset'
+                    : isVendorMode
+                    ? 'Restaurant Partner & Kitchen Portal'
                     : tab === 'signup'
-                    ? 'Join Ghana’s Premier Food Delivery Network'
+                    ? 'Create your customer account to start ordering'
                     : 'Sign in to access your orders & favorites'}
                 </p>
               </div>
@@ -215,66 +211,13 @@ export const AuthModal: React.FC = () => {
               <X className="w-5 h-5" />
             </button>
           </div>
-
-          {/* Persona / Role Selector Pills */}
-          {!isForgotPassword && (
-            <div className="mt-5 grid grid-cols-3 gap-1.5 p-1 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10">
-              <button
-                type="button"
-                onClick={() => {
-                  setRole('customer');
-                  setFeedback(null);
-                }}
-                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  role === 'customer'
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-900/30'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>Customer</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRole('vendor');
-                  setFeedback(null);
-                }}
-                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  role === 'vendor'
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-900/30'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span>Vendor Hub</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setRole('admin');
-                  setFeedback(null);
-                }}
-                className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  role === 'admin'
-                    ? 'bg-orange-600 text-white shadow-md shadow-orange-900/30'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Admin</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Modal Body */}
         <div className="p-5 sm:p-7 space-y-5 overflow-y-auto flex-1">
           
           {/* Main Auth Tabs (Sign In vs Create Account) */}
-          {!isForgotPassword && role === 'customer' && (
+          {!isForgotPassword && !isVendorMode && (
             <div className="flex border-b border-slate-200">
               <button
                 type="button"
@@ -325,8 +268,8 @@ export const AuthModal: React.FC = () => {
             </div>
           )}
 
-          {/* Social Auth (Google) - Only for customer sign in/up */}
-          {!isForgotPassword && role === 'customer' && (
+          {/* Social Auth (Google) - Only for customer */}
+          {!isForgotPassword && !isVendorMode && (
             <div className="space-y-3">
               <button
                 type="button"
@@ -416,7 +359,7 @@ export const AuthModal: React.FC = () => {
                 </button>
               </div>
             </form>
-          ) : tab === 'signup' && role === 'customer' ? (
+          ) : tab === 'signup' && !isVendorMode ? (
             /* CREATE ACCOUNT FORM (Customer) */
             <form onSubmit={handleSignUp} className="space-y-3.5">
               <div className="space-y-1">
@@ -524,19 +467,20 @@ export const AuthModal: React.FC = () => {
               </button>
             </form>
           ) : (
-            /* SIGN IN FORM (Customer / Vendor / Admin) */
+            /* SIGN IN FORM (Customer or Vendor Partner) */
             <form onSubmit={handleSignIn} className="space-y-4">
+              {isVendorMode && (
+                <div className="p-3 bg-orange-50 border border-orange-200 rounded-2xl text-xs text-orange-900 font-semibold flex items-center gap-2">
+                  <Store className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                  <span>Vendor Partner Portal — Sign in to manage your kitchen & orders</span>
+                </div>
+              )}
+
               <div className="space-y-1">
                 <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5">
-                    {role === 'customer' ? <Phone className="w-3.5 h-3.5 text-orange-600" /> : <Mail className="w-3.5 h-3.5 text-orange-600" />}
-                    <span>
-                      {role === 'vendor'
-                        ? 'Vendor Business Email or Phone'
-                        : role === 'admin'
-                        ? 'Administrator Email'
-                        : 'Phone Number or Email'}
-                    </span>
+                    {isVendorMode ? <Mail className="w-3.5 h-3.5 text-orange-600" /> : <Phone className="w-3.5 h-3.5 text-orange-600" />}
+                    <span>{isVendorMode ? 'Vendor Business Email or Phone' : 'Phone Number or Email'}</span>
                   </span>
                 </label>
                 <input
@@ -545,10 +489,8 @@ export const AuthModal: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder={
-                    role === 'vendor'
+                    isVendorMode
                       ? 'aunty.muni@gmail.com'
-                      : role === 'admin'
-                      ? 'admin@chowgrid.gh'
                       : '024 991 2233 or kwame@gmail.com'
                   }
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-3 focus:ring-orange-500/15 transition"
@@ -603,13 +545,7 @@ export const AuthModal: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span>
-                      {role === 'vendor'
-                        ? 'Sign In to Vendor Hub'
-                        : role === 'admin'
-                        ? 'Access Administration'
-                        : 'Sign In to ChowGrid'}
-                    </span>
+                    <span>{isVendorMode ? 'Sign In to Kitchen Hub' : 'Sign In'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -617,59 +553,40 @@ export const AuthModal: React.FC = () => {
             </form>
           )}
 
-          {/* ⚡ ONE-CLICK DEMO PERSONAS TOOLBOX */}
-          <div className="pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setShowDemoProfiles(!showDemoProfiles)}
-              className="w-full py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-bold text-slate-600 flex items-center justify-between transition cursor-pointer"
-            >
-              <span className="flex items-center gap-1.5 text-orange-700">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>1-Click Fast Demo Logins (Testing Sandbox)</span>
-              </span>
-              {showDemoProfiles ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
-            </button>
-
-            {showDemoProfiles && (
-              <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    onClick={() => {
-                      loginAsUser(u);
-                      handleClose();
-                    }}
-                    className="p-2.5 bg-white border border-slate-200 hover:border-orange-500 hover:bg-orange-50/40 rounded-xl text-left transition group shadow-xs cursor-pointer"
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={u.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100'}
-                        alt={u.name}
-                        className="w-6 h-6 rounded-full object-cover border border-slate-200"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-bold text-slate-800 truncate group-hover:text-orange-600">
-                          {u.name}
-                        </p>
-                        <span className="inline-block text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                          {u.role}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+          {/* Restaurant Partner Footer Switcher */}
+          <div className="pt-3 border-t border-slate-100 text-center">
+            {isVendorMode ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVendorMode(false);
+                  setFeedback(null);
+                }}
+                className="text-xs text-slate-500 hover:text-slate-900 font-bold transition cursor-pointer"
+              >
+                ← Back to Customer Sign In
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVendorMode(true);
+                  setFeedback(null);
+                }}
+                className="text-xs text-slate-500 hover:text-orange-600 font-semibold transition inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span>Restaurant Partner / Vendor Login →</span>
+              </button>
             )}
           </div>
 
         </div>
 
-        {/* Modal Footer / Legal Notice */}
+        {/* Modal Footer / Security */}
         <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 flex-shrink-0">
           <span>Protected by 256-bit Supabase SSL</span>
-          <span className="font-semibold">ChowGrid Ghana v2.4</span>
+          <span className="font-semibold">ChowGrid Ghana</span>
         </div>
       </div>
     </div>
