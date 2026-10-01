@@ -1,0 +1,578 @@
+import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
+import {
+  X,
+  User,
+  MapPin,
+  CreditCard,
+  Bell,
+  Lock,
+  Store,
+  Clock,
+  Phone,
+  Mail,
+  ShieldCheck,
+  CheckCircle2,
+  Plus,
+  Trash2,
+  Save,
+  DollarSign,
+} from 'lucide-react';
+
+interface SettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
+}) => {
+  const {
+    currentUser,
+    role,
+    stores,
+    activeVendorStoreId,
+    updateStoreStatus,
+  } = useApp();
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'payments' | 'notifications' | 'store_settings'>('profile');
+
+  // Customer Profile State
+  const [name, setName] = useState(currentUser?.name || 'Kwame Mensah');
+  const [email, setEmail] = useState(currentUser?.email || 'kwame.mensah@gmail.com');
+  const [phone, setPhone] = useState(currentUser?.phone || '+233 24 991 2233');
+
+  // Saved Addresses State
+  const [addresses, setAddresses] = useState<
+    { id: string; label: string; address: string; isDefault: boolean }[]
+  >([
+    {
+      id: 'addr-1',
+      label: 'Home',
+      address: 'House 14, East Legon Hills, Accra (Near Shell)',
+      isDefault: true,
+    },
+    {
+      id: 'addr-2',
+      label: 'Work / Office',
+      address: 'Silver Star Tower, Airport City, 4th Floor',
+      isDefault: false,
+    },
+  ]);
+  const [newAddrLabel, setNewAddrLabel] = useState('Other');
+  const [newAddrText, setNewAddrText] = useState('');
+  const [showAddAddress, setShowAddAddress] = useState(false);
+
+  // Notification Preferences
+  const [smsNotifications, setSmsNotifications] = useState(true);
+  const [whatsappReceipts, setWhatsappReceipts] = useState(true);
+  const [promoEmails, setPromoEmails] = useState(false);
+
+  // Vendor Store Settings State
+  const currentStore = stores.find((s) => s.id === activeVendorStoreId) || stores[0];
+  const [storeName, setStoreName] = useState(currentStore.name);
+  const [storeTagline, setStoreTagline] = useState(currentStore.tagline);
+  const [storePhone, setStorePhone] = useState(currentStore.phone);
+  const [storeAddress, setStoreAddress] = useState(currentStore.address);
+  const [prepTime, setPrepTime] = useState(currentStore.prepTimeEstimate);
+  const [openingHours, setOpeningHours] = useState(currentStore.scheduledHours);
+  const [payoutMomo, setPayoutMomo] = useState('+233 24 123 4567');
+
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setName(currentUser.name);
+      setEmail(currentUser.email);
+      setPhone(currentUser.phone);
+    }
+  }, [currentUser]);
+
+  if (!isOpen) return null;
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleAddAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAddrText.trim()) return;
+
+    setAddresses((prev) => [
+      ...prev,
+      {
+        id: `addr-${Date.now()}`,
+        label: newAddrLabel,
+        address: newAddrText.trim(),
+        isDefault: prev.length === 0,
+      },
+    ]);
+    setNewAddrText('');
+    setShowAddAddress(false);
+  };
+
+  const handleDeleteAddress = (id: string) => {
+    setAddresses((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleSetDefaultAddress = (id: string) => {
+    setAddresses((prev) =>
+      prev.map((a) => ({ ...a, isDefault: a.id === id }))
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-8 flex flex-col md:flex-row min-h-[580px]">
+        {/* Left Settings Sidebar */}
+        <div className="w-full md:w-64 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-6 flex flex-col justify-between">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">Settings</h3>
+              <p className="text-xs text-slate-500">Preferences & account settings</p>
+            </div>
+
+            <nav className="space-y-1 text-xs font-semibold">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 ${
+                  activeTab === 'profile'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>Personal Profile</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('addresses')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 ${
+                  activeTab === 'addresses'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <MapPin className="w-4 h-4" />
+                <span>Saved Addresses</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 ${
+                  activeTab === 'payments'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Payment Methods</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 ${
+                  activeTab === 'notifications'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+                <span>Notifications & SMS</span>
+              </button>
+
+              {role === 'vendor' && (
+                <button
+                  onClick={() => setActiveTab('store_settings')}
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 ${
+                    activeTab === 'store_settings'
+                      ? 'bg-orange-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <Store className="w-4 h-4" />
+                  <span>Store & Kitchen Profile</span>
+                </button>
+              )}
+            </nav>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400">
+            <span>ChowGrid v0.1 • Ghana</span>
+          </div>
+        </div>
+
+        {/* Right Settings Content */}
+        <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[80vh] md:max-h-[600px]">
+          <div>
+            {/* Top Close Button */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+              <h4 className="text-lg font-bold text-slate-900 font-['Outfit']">
+                {activeTab === 'profile' && 'Personal Profile'}
+                {activeTab === 'addresses' && 'Saved Delivery Locations'}
+                {activeTab === 'payments' && 'Payment Preferences'}
+                {activeTab === 'notifications' && 'Notification Settings'}
+                {activeTab === 'store_settings' && 'Store Configuration'}
+              </h4>
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Save Toast Feedback */}
+            {saveSuccess && (
+              <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-medium">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Settings saved successfully!</span>
+              </div>
+            )}
+
+            {/* Tab 1: Personal Profile */}
+            {activeTab === 'profile' && (
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="flex items-center gap-4 pb-2">
+                  <img
+                    src={currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                    alt="Profile"
+                    className="w-16 h-16 rounded-2xl object-cover border border-slate-200 shadow-xs"
+                  />
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-sm">{name}</h5>
+                    <p className="text-xs text-slate-500 capitalize">{role} Account</p>
+                    <button
+                      type="button"
+                      className="mt-1 text-xs text-orange-600 hover:underline font-semibold"
+                    >
+                      Change Photo
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600 font-medium">Full Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-600 font-medium">Ghana Phone Number</label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-600 font-medium">Email Address</label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-orange-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Changes</span>
+                </button>
+              </form>
+            )}
+
+            {/* Tab 2: Saved Addresses */}
+            {activeTab === 'addresses' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500">Manage delivery locations for quick 1-click checkout</p>
+                  <button
+                    onClick={() => setShowAddAddress(!showAddAddress)}
+                    className="px-3 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Address</span>
+                  </button>
+                </div>
+
+                {showAddAddress && (
+                  <form onSubmit={handleAddAddress} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <h5 className="text-xs font-bold text-slate-800">Add New Address</h5>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Home', 'Work', 'Other'].map((lbl) => (
+                        <button
+                          key={lbl}
+                          type="button"
+                          onClick={() => setNewAddrLabel(lbl)}
+                          className={`py-1.5 text-xs font-semibold rounded-lg border transition ${
+                            newAddrLabel === lbl
+                              ? 'bg-orange-600 text-white border-orange-600'
+                              : 'bg-white text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. GA-542-8812, House 22, Cantonments, Accra"
+                      value={newAddrText}
+                      onChange={(e) => setNewAddrText(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                    />
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddAddress(false)}
+                        className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-lg"
+                      >
+                        Save Address
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="space-y-2.5">
+                  {addresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      className={`p-4 rounded-2xl border flex items-start justify-between gap-3 ${
+                        addr.isDefault
+                          ? 'bg-orange-50/50 border-orange-300'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-xl mt-0.5 ${addr.isDefault ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                          <MapPin className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-slate-900 text-xs">{addr.label}</span>
+                            {addr.isDefault && (
+                              <span className="text-[10px] bg-orange-100 text-orange-800 font-bold px-2 py-0.5 rounded-full">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 mt-0.5">{addr.address}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {!addr.isDefault && (
+                          <button
+                            onClick={() => handleSetDefaultAddress(addr.id)}
+                            className="text-xs text-slate-500 hover:text-orange-600 font-medium"
+                          >
+                            Set Default
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteAddress(addr.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3: Payment Preferences */}
+            {activeTab === 'payments' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">Configure your default Mobile Money wallet or card</p>
+
+                <div className="space-y-3">
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-yellow-400 text-slate-950 font-bold text-xs flex items-center justify-center">
+                        MTN
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-900 text-xs">MTN Mobile Money Wallet</span>
+                        <p className="text-xs text-slate-500">+233 24 991 2233 • Kwame Mensah</p>
+                      </div>
+                    </div>
+                    <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
+                      Primary
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
+                        VISA
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-900 text-xs">Debit Card</span>
+                        <p className="text-xs text-slate-500">•••• •••• •••• 4242 (Expires 08/28)</p>
+                      </div>
+                    </div>
+                    <button className="text-xs text-slate-500 hover:text-slate-800 font-medium">
+                      Manage
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 4: Notifications */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-4">
+                <p className="text-xs text-slate-500">Control how and when ChowGrid communicates with you</p>
+
+                <div className="space-y-3">
+                  <label className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-bold text-slate-900 text-xs">SMS Delivery Updates & OTP</span>
+                      <p className="text-xs text-slate-500">Receive SMS notifications when food is prepared and rider departs</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={smsNotifications}
+                      onChange={(e) => setSmsNotifications(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 rounded"
+                    />
+                  </label>
+
+                  <label className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-bold text-slate-900 text-xs">WhatsApp Order Receipts</span>
+                      <p className="text-xs text-slate-500">Instant PDF receipt sent to your WhatsApp upon successful delivery</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={whatsappReceipts}
+                      onChange={(e) => setWhatsappReceipts(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 rounded"
+                    />
+                  </label>
+
+                  <label className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-bold text-slate-900 text-xs">Vendor Discounts & Promotions</span>
+                      <p className="text-xs text-slate-500">Receive weekly discounts from your favorite local food stores</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={promoEmails}
+                      onChange={(e) => setPromoEmails(e.target.checked)}
+                      className="w-4 h-4 text-orange-600 rounded"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 5: Vendor Store Settings (Vendor mode) */}
+            {activeTab === 'store_settings' && (
+              <form onSubmit={handleSaveProfile} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600 font-medium">Store Display Name</label>
+                  <input
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600 font-medium">Tagline / Bio</label>
+                  <input
+                    type="text"
+                    value={storeTagline}
+                    onChange={(e) => setStoreTagline(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-600 font-medium">Kitchen Address</label>
+                    <input
+                      type="text"
+                      value={storeAddress}
+                      onChange={(e) => setStoreAddress(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs text-slate-600 font-medium">Standard Prep Time</label>
+                    <select
+                      value={prepTime}
+                      onChange={(e) => setPrepTime(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                    >
+                      <option value="10-15 min">10-15 min (Fast)</option>
+                      <option value="15-20 min">15-20 min (Standard)</option>
+                      <option value="20-30 min">20-30 min (Complex / Grill)</option>
+                      <option value="30-45 min">30-45 min</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-600 font-medium">MoMo Payout Number</label>
+                  <div className="relative">
+                    <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={payoutMomo}
+                      onChange={(e) => setPayoutMomo(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="mt-2 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Update Kitchen Settings</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
