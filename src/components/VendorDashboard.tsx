@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { FoodItem, Order } from '../types';
+import { FoodItem, Order, ModifierGroup, ModifierOption } from '../types';
 import {
   Plus,
   Edit2,
@@ -16,6 +16,9 @@ import {
   ToggleRight,
   ShieldAlert,
   CheckCircle2,
+  Sparkles,
+  Layers,
+  ListPlus,
   X,
 } from 'lucide-react';
 
@@ -74,6 +77,225 @@ export const VendorDashboard: React.FC = () => {
     }
   };
 
+  // Modifier Group & Option Handlers for "Build Your Meal"
+  const handleAddModifierGroup = () => {
+    if (!editingFood) return;
+    const currentGroups = editingFood.modifierGroups || [];
+    const newGroup: ModifierGroup = {
+      id: `grp-${Date.now()}`,
+      name: `Option Group ${currentGroups.length + 1}`,
+      minSelection: 1,
+      maxSelection: 4,
+      required: true,
+      allowQuantityMultiplier: true,
+      options: [
+        { id: `opt-${Date.now()}-1`, name: 'Choice 1', price: 0, isDefault: true },
+      ],
+    };
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: [...currentGroups, newGroup],
+    });
+  };
+
+  const handleUpdateGroup = (groupId: string, field: keyof ModifierGroup, value: any) => {
+    if (!editingFood || !editingFood.modifierGroups) return;
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: editingFood.modifierGroups.map((g) =>
+        g.id === groupId ? { ...g, [field]: value } : g
+      ),
+    });
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    if (!editingFood || !editingFood.modifierGroups) return;
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: editingFood.modifierGroups.filter((g) => g.id !== groupId),
+    });
+  };
+
+  const handleAddOption = (groupId: string) => {
+    if (!editingFood || !editingFood.modifierGroups) return;
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: editingFood.modifierGroups.map((g) => {
+        if (g.id === groupId) {
+          const newOpt: ModifierOption = {
+            id: `opt-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+            name: '',
+            price: 5,
+            isDefault: false,
+          };
+          return { ...g, options: [...g.options, newOpt] };
+        }
+        return g;
+      }),
+    });
+  };
+
+  const handleUpdateOption = (
+    groupId: string,
+    optionId: string,
+    field: keyof ModifierOption,
+    value: any
+  ) => {
+    if (!editingFood || !editingFood.modifierGroups) return;
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: editingFood.modifierGroups.map((g) => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            options: g.options.map((opt) =>
+              opt.id === optionId ? { ...opt, [field]: value } : opt
+            ),
+          };
+        }
+        return g;
+      }),
+    });
+  };
+
+  const handleRemoveOption = (groupId: string, optionId: string) => {
+    if (!editingFood || !editingFood.modifierGroups) return;
+    setEditingFood({
+      ...editingFood,
+      modifierGroups: editingFood.modifierGroups.map((g) => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            options: g.options.filter((opt) => opt.id !== optionId),
+          };
+        }
+        return g;
+      }),
+    });
+  };
+
+  // Preset Template Loaders
+  const handleLoadPreset = (preset: 'waakye' | 'jollof' | 'banku') => {
+    if (!editingFood) return;
+
+    if (preset === 'waakye') {
+      setEditingFood({
+        ...editingFood,
+        type: 'build_your_meal',
+        modifierGroups: [
+          {
+            id: `grp-${Date.now()}-1`,
+            name: 'Choose Your Protein',
+            minSelection: 1,
+            maxSelection: 4,
+            required: true,
+            allowQuantityMultiplier: true,
+            options: [
+              { id: `opt-${Date.now()}-1`, name: 'Fried Hard-Boiled Egg', price: 5, isDefault: true },
+              { id: `opt-${Date.now()}-2`, name: 'Soft Stewed Wele (Cow Skin)', price: 8, isDefault: true },
+              { id: `opt-${Date.now()}-3`, name: 'Tender Stewed Beef (Chofi)', price: 15, isDefault: false },
+              { id: `opt-${Date.now()}-4`, name: 'Crispy Fried Fish Chunk', price: 18, isDefault: false },
+              { id: `opt-${Date.now()}-5`, name: 'Spicy Fried Guinea Fowl (Akokɔ)', price: 22, isDefault: false },
+            ],
+          },
+          {
+            id: `grp-${Date.now()}-2`,
+            name: 'Essential Sides & Garnish',
+            minSelection: 0,
+            maxSelection: 5,
+            required: false,
+            allowQuantityMultiplier: true,
+            options: [
+              { id: `opt-${Date.now()}-6`, name: 'Spaghetti Talia Noodles', price: 4, isDefault: true },
+              { id: `opt-${Date.now()}-7`, name: 'Moist Gari Foto', price: 4, isDefault: true },
+              { id: `opt-${Date.now()}-8`, name: 'Sweet Fried Plantain (Kelewele)', price: 8, isDefault: false },
+              { id: `opt-${Date.now()}-9`, name: 'Fresh Mixed Salad & Mayonnaise', price: 6, isDefault: false },
+            ],
+          },
+          {
+            id: `grp-${Date.now()}-3`,
+            name: 'Sauce & Stew Preferences',
+            minSelection: 1,
+            maxSelection: 1,
+            required: true,
+            allowQuantityMultiplier: false,
+            options: [
+              { id: `opt-${Date.now()}-10`, name: 'Rich Black Shito + Tomato Stew Mix', price: 0, isDefault: true },
+              { id: `opt-${Date.now()}-11`, name: 'Extra Hot Shito Only', price: 0, isDefault: false },
+              { id: `opt-${Date.now()}-12`, name: 'Mild Stew Only (No Shito)', price: 0, isDefault: false },
+            ],
+          },
+        ],
+      });
+    } else if (preset === 'jollof') {
+      setEditingFood({
+        ...editingFood,
+        type: 'build_your_meal',
+        modifierGroups: [
+          {
+            id: `grp-${Date.now()}-1`,
+            name: 'Select Meat / Chicken Option',
+            minSelection: 1,
+            maxSelection: 3,
+            required: true,
+            allowQuantityMultiplier: true,
+            options: [
+              { id: `opt-${Date.now()}-1`, name: 'Quarter Grilled Chicken', price: 20, isDefault: true },
+              { id: `opt-${Date.now()}-2`, name: 'Spicy Fried Goat Meat Chunks', price: 25, isDefault: false },
+              { id: `opt-${Date.now()}-3`, name: 'Grilled Pork Ribs', price: 25, isDefault: false },
+              { id: `opt-${Date.now()}-4`, name: 'Fried Red Fish', price: 22, isDefault: false },
+            ],
+          },
+          {
+            id: `grp-${Date.now()}-2`,
+            name: 'Add Extra Sides',
+            minSelection: 0,
+            maxSelection: 3,
+            required: false,
+            allowQuantityMultiplier: true,
+            options: [
+              { id: `opt-${Date.now()}-5`, name: 'Crispy Kelewele (Fried Plantain)', price: 10, isDefault: false },
+              { id: `opt-${Date.now()}-6`, name: 'Creamy Coleslaw Salad', price: 7, isDefault: false },
+              { id: `opt-${Date.now()}-7`, name: 'Extra Jollof Rice Portion', price: 15, isDefault: false },
+            ],
+          },
+        ],
+      });
+    } else if (preset === 'banku') {
+      setEditingFood({
+        ...editingFood,
+        type: 'build_your_meal',
+        modifierGroups: [
+          {
+            id: `grp-${Date.now()}-1`,
+            name: 'Select Fish / Protein Option',
+            minSelection: 1,
+            maxSelection: 2,
+            required: true,
+            allowQuantityMultiplier: false,
+            options: [
+              { id: `opt-${Date.now()}-1`, name: 'Whole Grilled Tilapia', price: 35, isDefault: true },
+              { id: `opt-${Date.now()}-2`, name: 'Fried Red Fish Portion', price: 25, isDefault: false },
+              { id: `opt-${Date.now()}-3`, name: 'Assorted Meats in Okro Soup', price: 30, isDefault: false },
+            ],
+          },
+          {
+            id: `grp-${Date.now()}-2`,
+            name: 'Pepper & Sauce Style',
+            minSelection: 1,
+            maxSelection: 1,
+            required: true,
+            allowQuantityMultiplier: false,
+            options: [
+              { id: `opt-${Date.now()}-4`, name: 'Fresh Ground Red & Green Pepper Mix', price: 0, isDefault: true },
+              { id: `opt-${Date.now()}-5`, name: 'Okro Stew with Groundnut Oil', price: 8, isDefault: false },
+            ],
+          },
+        ],
+      });
+    }
+  };
+
   const handleSaveFoodForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingFood || !editingFood.name || !editingFood.basePrice) return;
@@ -89,7 +311,7 @@ export const VendorDashboard: React.FC = () => {
       isAvailable: editingFood.isAvailable ?? true,
       type: editingFood.type || 'build_your_meal',
       prepTimeMinutes: Number(editingFood.prepTimeMinutes || 15),
-      modifierGroups: editingFood.modifierGroups || [],
+      modifierGroups: editingFood.type === 'build_your_meal' ? (editingFood.modifierGroups || []) : [],
     };
 
     saveFoodItem(itemToSave);
@@ -559,111 +781,378 @@ export const VendorDashboard: React.FC = () => {
 
       {/* Edit / Create Food Modal */}
       {editingFood && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl space-y-5 my-8">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-lg font-bold text-slate-900 font-['Outfit']">
-                {editingFood.id ? 'Edit Dish Listing' : 'Create New Food Listing'}
-              </h3>
-              <button onClick={() => setEditingFood(null)} className="text-slate-400 hover:text-slate-700">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-5 my-auto max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 flex-shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-orange-50 text-orange-600 rounded-xl">
+                  <ChefHat className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 font-['Outfit']">
+                    {editingFood.id ? 'Edit Dish Listing' : 'Create New Food Listing'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Set dish prices, preparation time, and custom add-on choices.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingFood(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveFoodForm} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <form onSubmit={handleSaveFoodForm} className="space-y-4 overflow-y-auto flex-1 pr-1">
               <div className="space-y-1">
-                <label className="text-xs text-slate-600 font-medium">Food Name *</label>
+                <label className="text-xs text-slate-700 font-bold">Food / Dish Name *</label>
                 <input
                   type="text"
                   required
                   value={editingFood.name || ''}
                   onChange={(e) => setEditingFood({ ...editingFood, name: e.target.value })}
                   placeholder="e.g. Special Waakye with Stew"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/15"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-600 font-medium">Base Price (₵) *</label>
+                  <label className="text-xs text-slate-700 font-bold">Base Price (₵) *</label>
                   <input
                     type="number"
                     required
                     min={1}
                     value={editingFood.basePrice || ''}
                     onChange={(e) => setEditingFood({ ...editingFood, basePrice: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900 font-mono"
+                    placeholder="25.00"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 font-mono focus:bg-white focus:outline-none focus:border-orange-500"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-slate-600 font-medium">Prep Time (mins)</label>
+                  <label className="text-xs text-slate-700 font-bold">Category</label>
+                  <input
+                    type="text"
+                    value={editingFood.category || 'Local Ghanaian'}
+                    onChange={(e) => setEditingFood({ ...editingFood, category: e.target.value })}
+                    placeholder="Waakye, Jollof..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-slate-700 font-bold">Prep Time (mins)</label>
                   <input
                     type="number"
                     min={5}
                     value={editingFood.prepTimeMinutes || 15}
                     onChange={(e) => setEditingFood({ ...editingFood, prepTimeMinutes: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-600 font-medium">Dish Description</label>
+                <label className="text-xs text-slate-700 font-bold">Dish Description</label>
                 <textarea
                   rows={2}
                   value={editingFood.description || ''}
                   onChange={(e) => setEditingFood({ ...editingFood, description: e.target.value })}
-                  placeholder="Aromatic rice, black shito, tomato stew..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900"
+                  placeholder="Aromatic sorghum-leaf rice, rich black shito, seasoned stews..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-slate-600 font-medium">Photo URL</label>
+                <label className="text-xs text-slate-700 font-bold">Photo URL</label>
                 <input
                   type="url"
                   value={editingFood.imageUrl || ''}
                   onChange={(e) => setEditingFood({ ...editingFood, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-900"
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-orange-500"
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs text-slate-600 font-medium">Listing Format</label>
+              {/* Listing Format Switcher */}
+              <div className="space-y-1.5 pt-1">
+                <label className="text-xs text-slate-700 font-bold">Listing Format</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setEditingFood({ ...editingFood, type: 'build_your_meal' })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                    onClick={() => {
+                      if (editingFood.type !== 'build_your_meal') {
+                        // If switching to build_your_meal, ensure at least 1 group or load waakye preset if empty
+                        if (!editingFood.modifierGroups || editingFood.modifierGroups.length === 0) {
+                          handleLoadPreset('waakye');
+                        } else {
+                          setEditingFood({ ...editingFood, type: 'build_your_meal' });
+                        }
+                      }
+                    }}
+                    className={`py-3 px-4 rounded-2xl text-xs font-bold border transition flex items-center justify-center gap-2 cursor-pointer ${
                       editingFood.type === 'build_your_meal'
-                        ? 'bg-orange-50 border-orange-500 text-orange-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                        ? 'bg-orange-50 border-orange-500 text-orange-800 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    Build Your Meal
+                    <Layers className="w-4 h-4 text-orange-600" />
+                    <span>Build Your Meal (Customizable Options)</span>
                   </button>
+
                   <button
                     type="button"
                     onClick={() => setEditingFood({ ...editingFood, type: 'fixed' })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition ${
+                    className={`py-3 px-4 rounded-2xl text-xs font-bold border transition flex items-center justify-center gap-2 cursor-pointer ${
                       editingFood.type === 'fixed'
-                        ? 'bg-orange-50 border-orange-500 text-orange-800'
-                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                        ? 'bg-orange-50 border-orange-500 text-orange-800 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
-                    Fixed Meal Combo
+                    <ChefHat className="w-4 h-4 text-orange-600" />
+                    <span>Fixed Meal Combo</span>
                   </button>
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-2xl text-xs transition shadow-sm mt-2"
-              >
-                Save & Publish Dish
-              </button>
+              {/* ================================================================ */}
+              {/* BUILD YOUR MEAL - OPTION GROUPS & ADD-ONS BUILDER */}
+              {/* ================================================================ */}
+              {editingFood.type === 'build_your_meal' && (
+                <div className="mt-4 p-4 sm:p-5 bg-orange-50/50 border border-orange-200 rounded-3xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-orange-200/80 pb-3">
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 font-['Outfit'] flex items-center gap-2">
+                        <ListPlus className="w-4 h-4 text-orange-600" />
+                        <span>Customer Option Groups (Proteins, Sides, Sauces)</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-600">
+                        Customers can choose add-ons, select quantities, and customize their meal with these options.
+                      </p>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-orange-500" />
+                        <span>Quick Presets:</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleLoadPreset('waakye')}
+                        className="px-2 py-1 bg-white hover:bg-orange-100 border border-orange-200 rounded-lg text-[10px] font-bold text-orange-800 transition cursor-pointer"
+                      >
+                        Waakye
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleLoadPreset('jollof')}
+                        className="px-2 py-1 bg-white hover:bg-orange-100 border border-orange-200 rounded-lg text-[10px] font-bold text-orange-800 transition cursor-pointer"
+                      >
+                        Jollof
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleLoadPreset('banku')}
+                        className="px-2 py-1 bg-white hover:bg-orange-100 border border-orange-200 rounded-lg text-[10px] font-bold text-orange-800 transition cursor-pointer"
+                      >
+                        Banku
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Groups List */}
+                  <div className="space-y-4">
+                    {(!editingFood.modifierGroups || editingFood.modifierGroups.length === 0) && (
+                      <div className="p-4 bg-white border border-dashed border-orange-300 rounded-2xl text-center space-y-2">
+                        <p className="text-xs text-slate-600">No option groups added yet.</p>
+                        <button
+                          type="button"
+                          onClick={handleAddModifierGroup}
+                          className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition cursor-pointer"
+                        >
+                          + Add First Group
+                        </button>
+                      </div>
+                    )}
+
+                    {editingFood.modifierGroups?.map((group, groupIdx) => (
+                      <div
+                        key={group.id}
+                        className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs space-y-3"
+                      >
+                        {/* Group Header */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1">
+                            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                              Group #{groupIdx + 1} Name
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={group.name}
+                              onChange={(e) => handleUpdateGroup(group.id, 'name', e.target.value)}
+                              placeholder="e.g. Choose Your Protein"
+                              className="w-full font-bold text-slate-900 border-b border-slate-200 focus:border-orange-500 py-1 text-sm focus:outline-none"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveGroup(group.id)}
+                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                            title="Delete Group"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Group Selection Rules */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          <div className="space-y-0.5">
+                            <label className="text-[10px] text-slate-500 font-semibold">Min Selection</label>
+                            <input
+                              type="number"
+                              min={0}
+                              max={10}
+                              value={group.minSelection}
+                              onChange={(e) => handleUpdateGroup(group.id, 'minSelection', Number(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs text-slate-900"
+                            />
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <label className="text-[10px] text-slate-500 font-semibold">Max Selection</label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={20}
+                              value={group.maxSelection}
+                              onChange={(e) => handleUpdateGroup(group.id, 'maxSelection', Number(e.target.value))}
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs text-slate-900"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-4">
+                            <input
+                              type="checkbox"
+                              id={`req-${group.id}`}
+                              checked={group.required}
+                              onChange={(e) => handleUpdateGroup(group.id, 'required', e.target.checked)}
+                              className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500"
+                            />
+                            <label htmlFor={`req-${group.id}`} className="text-xs text-slate-700 font-bold select-none cursor-pointer">
+                              Required
+                            </label>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 pt-4">
+                            <input
+                              type="checkbox"
+                              id={`mult-${group.id}`}
+                              checked={group.allowQuantityMultiplier ?? true}
+                              onChange={(e) => handleUpdateGroup(group.id, 'allowQuantityMultiplier', e.target.checked)}
+                              className="w-4 h-4 text-orange-600 rounded border-slate-300 focus:ring-orange-500"
+                            />
+                            <label htmlFor={`mult-${group.id}`} className="text-xs text-slate-700 font-bold select-none cursor-pointer">
+                              Allow Multiplier (2x, 3x)
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Options in this Group */}
+                        <div className="space-y-2 pt-2 border-t border-slate-100">
+                          <label className="text-[11px] font-bold text-slate-600 flex items-center justify-between">
+                            <span>Individual Choices in this Group</span>
+                            <span className="text-[10px] text-slate-400 font-normal">Name & Extra Price (₵)</span>
+                          </label>
+
+                          <div className="space-y-1.5">
+                            {group.options.map((opt) => (
+                              <div
+                                key={opt.id}
+                                className="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100"
+                              >
+                                <input
+                                  type="text"
+                                  required
+                                  value={opt.name}
+                                  onChange={(e) => handleUpdateOption(group.id, opt.id, 'name', e.target.value)}
+                                  placeholder="e.g. Fried Fish / Wele / Egg"
+                                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-900 focus:outline-none focus:border-orange-500"
+                                />
+
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-slate-500 font-bold">₵</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    step="0.5"
+                                    value={opt.price}
+                                    onChange={(e) => handleUpdateOption(group.id, opt.id, 'price', Number(e.target.value))}
+                                    placeholder="0.00"
+                                    className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 font-mono text-right focus:outline-none focus:border-orange-500"
+                                  />
+                                </div>
+
+                                <label className="flex items-center gap-1 text-[11px] text-slate-600 select-none pl-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={opt.isDefault || false}
+                                    onChange={(e) => handleUpdateOption(group.id, opt.id, 'isDefault', e.target.checked)}
+                                    className="w-3.5 h-3.5 text-orange-600 rounded border-slate-300"
+                                  />
+                                  <span className="hidden sm:inline">Pre-selected</span>
+                                </label>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveOption(group.id, opt.id)}
+                                  className="p-1 text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                                  title="Remove option"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAddOption(group.id)}
+                            className="mt-2 text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1 hover:underline cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Choice Option to "{group.name || 'Group'}"</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={handleAddModifierGroup}
+                      className="w-full py-2.5 border-2 border-dashed border-orange-300 hover:border-orange-500 hover:bg-orange-100/50 text-orange-700 font-bold rounded-2xl text-xs transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Another Option Group (e.g. Sides, Sauces, Extras)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 active:scale-[0.99] text-white font-bold rounded-2xl text-sm transition shadow-lg shadow-orange-600/25 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Save & Publish Dish Listing</span>
+                </button>
+              </div>
             </form>
           </div>
         </div>
