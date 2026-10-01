@@ -196,17 +196,6 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         onClick={() => {
                           setIsProfileMenuOpen(false);
-                          setIsAuthModalOpen(true);
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 rounded-xl transition flex items-center gap-2"
-                      >
-                        <UserCheck className="w-3.5 h-3.5 text-orange-600" />
-                        <span>Switch Persona / Portal</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setIsProfileMenuOpen(false);
                           logout();
                         }}
                         className="w-full text-left px-3 py-2 text-xs text-rose-600 hover:bg-rose-50 rounded-xl transition flex items-center gap-2 border-t border-slate-100 pt-2"
