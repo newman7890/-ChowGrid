@@ -316,4 +316,153 @@ export const SupabaseService = {
 
     return true;
   },
+
+  // ============================================================================
+  // 9. Supabase Auth & Profile Methods
+  // ============================================================================
+
+  // Sign Up with Email & Password
+  async signUp(email: string, password: string, metadata: { fullName: string; phone: string; role: 'customer' | 'vendor' | 'admin'; address?: string }) {
+    if (!isSupabaseConfigured || !supabase) return { user: null, error: 'Supabase is not configured' };
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: metadata.fullName,
+            phone: metadata.phone,
+            role: metadata.role,
+            delivery_address: metadata.address,
+          },
+        },
+      });
+
+      if (error) return { user: null, error: error.message };
+
+      if (data.user) {
+        // Ensure profile row exists in public.profiles
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            full_name: metadata.fullName,
+            phone: metadata.phone,
+            email: email,
+            role: metadata.role,
+            updated_at: new Date().toISOString(),
+          });
+        } catch (e) {
+          console.warn('Profile upsert fallback:', e);
+        }
+      }
+
+      return { user: data.user, session: data.session, error: null };
+    } catch (err: any) {
+      return { user: null, error: err.message || 'Registration failed' };
+    }
+  },
+
+  // Sign In with Email & Password
+  async signIn(email: string, password: string) {
+    if (!isSupabaseConfigured || !supabase) return { user: null, error: 'Supabase is not configured' };
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) return { user: null, error: error.message };
+      return { user: data.user, session: data.session, error: null };
+    } catch (err: any) {
+      return { user: null, error: err.message || 'Sign in failed' };
+    }
+  },
+
+  // Sign In with Google OAuth
+  async signInWithOAuth(provider: 'google') {
+    if (!isSupabaseConfigured || !supabase) return { error: 'Supabase is not configured' };
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+
+      if (error) return { error: error.message };
+      return { error: null };
+    } catch (err: any) {
+      return { error: err.message || 'OAuth sign in failed' };
+    }
+  },
+
+  // Sign Out
+  async signOut() {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error signing out from Supabase:', err);
+    }
+  },
+
+  // Reset Password via Email
+  async resetPasswordForEmail(email: string) {
+    if (!isSupabaseConfigured || !supabase) return { success: false, error: 'Supabase is not configured' };
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/#reset-password`,
+      });
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Password reset request failed' };
+    }
+  },
+
+  // Get User Profile
+  async getUserProfile(userId: string) {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.warn('Could not fetch user profile:', error);
+        return null;
+      }
+
+      return data;
+    } catch (err) {
+      console.warn('Profile fetch error:', err);
+      return null;
+    }
+  },
+
+  // Update User Profile
+  async updateUserProfile(userId: string, updates: { full_name?: string; phone?: string; avatar_url?: string }) {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', userId);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('Failed to update profile in Supabase:', err);
+      return false;
+    }
+  },
 };

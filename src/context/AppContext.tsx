@@ -20,7 +20,7 @@ import {
   INITIAL_USERS,
 } from '../data/mockData';
 import { SupabaseService } from '../services/supabaseService';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 interface AppContextType {
   role: UserRole;
@@ -30,9 +30,11 @@ interface AppContextType {
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   loginAsUser: (user: UserAccount) => void;
-  loginWithCredentials: (identifier: string, role: UserRole) => { success: boolean; message: string };
-  registerCustomer: (name: string, phone: string, email: string, address: string) => UserAccount;
-  logout: () => void;
+  loginWithCredentials: (identifier: string, password?: string, targetRole?: UserRole) => Promise<{ success: boolean; message: string }>;
+  registerCustomer: (name: string, phone: string, email: string, address: string, password?: string, role?: UserRole) => Promise<{ success: boolean; message: string; user?: UserAccount }>;
+  loginWithOAuth: (provider: 'google') => Promise<{ success: boolean; message: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  logout: () => Promise<void>;
 
   activeVendorStoreId: string;
   setActiveVendorStoreId: (storeId: string) => void;
@@ -181,9 +183,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('chowgrid_cart', JSON.stringify(cart));
   }, [cart]);
 
-  // Load initial data from Supabase if configured
+  // Load initial data from Supabase & Hydrate Session if configured
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !supabase) return;
 
     const loadSupabaseData = async () => {
       try {
@@ -203,6 +205,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     loadSupabaseData();
 
+    // Check active Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        SupabaseService.getUserProfile(session.user.id).then((profile) => {
+          if (profile) {
+            const userAcc: UserAccount = {
+              id: profile.id,
+              name: profile.full_name || session.user.email?.split('@')[0] || 'User',
+              email: profile.email || session.user.email || '',
+              phone: profile.phone || '',
+              role: (profile.role as UserRole) || 'customer',
+              avatarUrl: profile.avatar_url,
+              deliveryAddress: profile.delivery_address || 'Accra, Ghana',
+              vendorStoreId: profile.vendor_store_id,
+            };
+            setCurrentUser(userAcc);
+            setRole(userAcc.role);
+            if (userAcc.role === 'vendor' && userAcc.vendorStoreId) {
+              setActiveVendorStoreId(userAcc.vendorStoreId);
+            }
+          }
+        });
+      }
+    });
+
+    // Listen to Supabase Auth State changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const profile = await SupabaseService.getUserProfile(session.user.id);
+        const userAcc: UserAccount = {
+          id: session.user.id,
+          name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          phone: profile?.phone || session.user.user_metadata?.phone || '',
+          role: (profile?.role || session.user.user_metadata?.role || 'customer') as UserRole,
+          avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+          deliveryAddress: profile?.delivery_address || 'Accra, Ghana',
+          vendorStoreId: profile?.vendor_store_id,
+        };
+        setCurrentUser(userAcc);
+        setRole(userAcc.role);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setRole('customer');
+      }
+    });
+
     // Subscribe to Realtime order notifications
     const unsubscribe = SupabaseService.subscribeToOrders((updatedOrder) => {
       setOrders((prev) => {
@@ -215,6 +264,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => {
+      authListener?.subscription?.unsubscribe();
       unsubscribe();
     };
   }, []);
@@ -229,12 +279,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthModalOpen(false);
   };
 
-  const loginWithCredentials = (identifier: string, targetRole: UserRole) => {
-    const clean = identifier.trim().toLowerCase();
+  const loginWithCredentials = async (
+    identifier: string,
+    password?: string,
+    targetRole: UserRole = 'customer'
+  ): Promise<{ success: boolean; message: string }> => {
+    const clean = identifier.trim();
+
+    // 1. Try real Supabase Auth if it's an email and Supabase is configured
+    if (isSupabaseConfigured && clean.includes('@') && password) {
+      const res = await SupabaseService.signIn(clean, password);
+      if (res.user) {
+        const profile = await SupabaseService.getUserProfile(res.user.id);
+        const userAcc: UserAccount = {
+          id: res.user.id,
+          name: profile?.full_name || res.user.user_metadata?.full_name || clean.split('@')[0],
+          email: clean,
+          phone: profile?.phone || '+233 24 000 0000',
+          role: (profile?.role || res.user.user_metadata?.role || targetRole) as UserRole,
+          avatarUrl: profile?.avatar_url,
+          deliveryAddress: profile?.delivery_address || 'Accra, Ghana',
+        };
+        loginAsUser(userAcc);
+        return { success: true, message: `Welcome back, ${userAcc.name}!` };
+      }
+    }
+
+    // 2. Demo Persona & Local Mock User Match (works instantly for testing & offline)
+    const lower = clean.toLowerCase();
     const found = users.find(
       (u) =>
-        (u.email.toLowerCase() === clean || u.phone.includes(clean)) &&
-        u.role === targetRole
+        (u.email.toLowerCase() === lower || u.phone.includes(clean)) &&
+        (!targetRole || u.role === targetRole)
     );
 
     if (found) {
@@ -242,42 +318,120 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true, message: `Welcome back, ${found.name}!` };
     }
 
-    // Auto-create customer if logging in with new phone/email
+    // 3. Fallback Auto-Registration for quick customer sign-in
     if (targetRole === 'customer') {
       const newUser: UserAccount = {
         id: `user-${Date.now()}`,
-        name: identifier.includes('@') ? identifier.split('@')[0] : 'Valued Customer',
-        email: identifier.includes('@') ? identifier : `${clean}@customer.gh`,
-        phone: identifier.includes('@') ? '+233 24 000 0000' : identifier,
+        name: clean.includes('@') ? clean.split('@')[0] : 'Valued Customer',
+        email: clean.includes('@') ? clean : `${clean.replace(/[^a-zA-Z0-9]/g, '')}@customer.gh`,
+        phone: clean.includes('@') ? '+233 24 000 0000' : clean,
         role: 'customer',
         deliveryAddress: 'Accra, Ghana',
       };
       setUsers((prev) => [...prev, newUser]);
       loginAsUser(newUser);
-      return { success: true, message: `Account created! Welcome, ${newUser.name}!` };
+      return { success: true, message: `Account ready! Welcome, ${newUser.name}!` };
     }
 
     return {
       success: false,
-      message: `No ${targetRole} account found for "${identifier}". Please check details or select a demo profile.`,
+      message: `No ${targetRole} account found for "${clean}". Please verify your credentials or select a quick demo profile.`,
     };
   };
 
-  const registerCustomer = (name: string, phone: string, email: string, address: string) => {
+  const registerCustomer = async (
+    name: string,
+    phone: string,
+    email: string,
+    address: string,
+    password?: string,
+    targetRole: UserRole = 'customer'
+  ): Promise<{ success: boolean; message: string; user?: UserAccount }> => {
+    // 1. Try real Supabase Sign Up if email & password are provided
+    if (isSupabaseConfigured && email && password) {
+      const res = await SupabaseService.signUp(email, password, {
+        fullName: name,
+        phone,
+        role: targetRole,
+        address,
+      });
+
+      if (res.error) {
+        // Return friendly message if already registered or failed
+        if (res.error.toLowerCase().includes('already registered')) {
+          return { success: false, message: 'An account with this email already exists. Please Sign In.' };
+        }
+        return { success: false, message: res.error };
+      }
+
+      const userAcc: UserAccount = {
+        id: res.user?.id || `user-${Date.now()}`,
+        name,
+        phone,
+        email,
+        deliveryAddress: address,
+        role: targetRole,
+      };
+
+      setUsers((prev) => [...prev, userAcc]);
+      loginAsUser(userAcc);
+      return { success: true, message: `Welcome to ChowGrid, ${name}!`, user: userAcc };
+    }
+
+    // 2. Local registration fallback
     const newUser: UserAccount = {
       id: `user-${Date.now()}`,
       name,
       phone,
-      email,
+      email: email || `${phone.replace(/[^0-9]/g, '')}@customer.gh`,
       deliveryAddress: address,
-      role: 'customer',
+      role: targetRole,
     };
     setUsers((prev) => [...prev, newUser]);
     loginAsUser(newUser);
-    return newUser;
+    return { success: true, message: `Account created! Welcome, ${newUser.name}!`, user: newUser };
   };
 
-  const logout = () => {
+  const loginWithOAuth = async (provider: 'google'): Promise<{ success: boolean; message: string }> => {
+    if (!isSupabaseConfigured) {
+      // Demo Google Auth
+      const demoGoogleUser: UserAccount = {
+        id: `google-${Date.now()}`,
+        name: 'Google Customer',
+        email: 'customer@gmail.com',
+        phone: '+233 24 555 1234',
+        role: 'customer',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+        deliveryAddress: 'Airport Residential Area, Accra',
+      };
+      setUsers((prev) => [...prev, demoGoogleUser]);
+      loginAsUser(demoGoogleUser);
+      return { success: true, message: 'Signed in with Google!' };
+    }
+
+    const { error } = await SupabaseService.signInWithOAuth(provider);
+    if (error) return { success: false, message: error };
+    return { success: true, message: 'Redirecting to Google...' };
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    if (!email.trim() || !email.includes('@')) {
+      return { success: false, message: 'Please enter a valid email address.' };
+    }
+
+    if (isSupabaseConfigured) {
+      const res = await SupabaseService.resetPasswordForEmail(email.trim());
+      if (!res.success) return { success: false, message: res.error || 'Failed to send reset link.' };
+      return { success: true, message: `Password reset link sent to ${email}!` };
+    }
+
+    return { success: true, message: `Demo reset instructions sent to ${email}!` };
+  };
+
+  const logout = async () => {
+    if (isSupabaseConfigured) {
+      await SupabaseService.signOut();
+    }
     setCurrentUser(null);
     setRole('customer');
   };
@@ -629,6 +783,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginAsUser,
         loginWithCredentials,
         registerCustomer,
+        loginWithOAuth,
+        resetPassword,
         logout,
         activeVendorStoreId,
         setActiveVendorStoreId,
