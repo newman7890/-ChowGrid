@@ -22,6 +22,8 @@ import {
   Sparkles,
   AlertCircle,
   BadgeCheck,
+  ChevronRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -44,6 +46,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'payments' | 'notifications' | 'seller_application' | 'store_settings'>('profile');
+  const [mobileScreen, setMobileScreen] = useState<'menu' | 'detail'>('menu');
 
   // Customer Profile State
   const [name, setName] = useState(currentUser?.name || 'Kwame Mensah');
@@ -118,6 +121,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setMobileScreen('menu');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSaveProfile = (e: React.FormEvent) => {
@@ -175,115 +184,175 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     );
   };
 
+  const openMobileDetail = (tab: 'profile' | 'addresses' | 'payments' | 'notifications' | 'seller_application' | 'store_settings') => {
+    setActiveTab(tab);
+    setMobileScreen('detail');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-4 sm:my-8 flex flex-col md:flex-row min-h-[520px] md:min-h-[580px] max-h-[92vh] md:max-h-[85vh]">
-        {/* Mobile Header (Hidden on Desktop) */}
-        <div className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 font-['Outfit']">Settings</h3>
-            <p className="text-[11px] text-slate-500">Preferences & account settings</p>
+      <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-4 sm:my-8 flex flex-col md:flex-row h-[580px] sm:h-[620px] max-h-[90vh]">
+        {/* MOBILE VIEW 1: Main Settings Menu List */}
+        {mobileScreen === 'menu' && (
+          <div className="md:hidden flex flex-col h-full w-full bg-white">
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 font-['Outfit']">Settings</h3>
+                <p className="text-xs text-slate-500">Preferences & account settings</p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Profile Glance Card */}
+            <div className="p-4 border-b border-slate-100 bg-slate-50/70 flex items-center gap-3">
+              <img
+                src={currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                alt={name}
+                className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shadow-xs"
+              />
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-bold text-slate-900 truncate">{name}</h4>
+                <p className="text-xs text-slate-500 truncate">{phone}</p>
+                <span className="inline-block mt-0.5 text-[10px] uppercase font-bold px-2 py-0.2 rounded bg-orange-100 text-orange-800">
+                  {currentUser?.role || role} Account
+                </span>
+              </div>
+            </div>
+
+            {/* Mobile Nav Menu Items */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5 divide-y divide-slate-100">
+              <button
+                onClick={() => openMobileDetail('profile')}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-orange-50 text-orange-600">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900 block">Personal Profile</span>
+                    <span className="text-xs text-slate-500">Name, phone, email & photo</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => openMobileDetail('addresses')}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition text-left pt-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900 block">Saved Addresses</span>
+                    <span className="text-xs text-slate-500">{addresses.length} saved locations</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => openMobileDetail('payments')}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition text-left pt-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900 block">Payment Methods</span>
+                    <span className="text-xs text-slate-500">MTN MoMo & cards</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => openMobileDetail('notifications')}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition text-left pt-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
+                    <Bell className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-slate-900 block">Notifications & Alerts</span>
+                    <span className="text-xs text-slate-500">SMS updates & WhatsApp receipts</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => openMobileDetail('seller_application')}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-orange-50/50 active:bg-orange-100/50 transition text-left pt-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+                    <ChefHat className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-slate-900">Apply as Seller</span>
+                      {myApplication && (
+                        <span className="text-[10px] px-1.5 py-0.2 rounded font-bold uppercase bg-amber-100 text-amber-800">
+                          {myApplication.status}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-500">Sell dishes on ChowGrid</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  setIsAuthModalOpen(true);
+                }}
+                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-orange-50 transition text-left pt-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-orange-100 text-orange-700">
+                    <Store className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-sm text-orange-950 block">Vendor Portal</span>
+                    <span className="text-xs text-orange-700">Sign in to kitchen dashboard</span>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-orange-600" />
+              </button>
+
+              {role === 'vendor' && (
+                <button
+                  onClick={() => openMobileDetail('store_settings')}
+                  className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition text-left pt-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700">
+                      <Store className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm text-slate-900 block">Store & Kitchen Profile</span>
+                      <span className="text-xs text-slate-500">Hours, prep time & payout</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
+              )}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Mobile Horizontal Tab Strip (Hidden on Desktop) */}
-        <div className="md:hidden flex items-center gap-1.5 p-2.5 bg-slate-50 border-b border-slate-200 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-              activeTab === 'profile'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>Profile</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('addresses')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-              activeTab === 'addresses'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Addresses</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('payments')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-              activeTab === 'payments'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>Payments</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-              activeTab === 'notifications'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            <Bell className="w-3.5 h-3.5" />
-            <span>Alerts</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('seller_application')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-              activeTab === 'seller_application'
-                ? 'bg-orange-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200'
-            }`}
-          >
-            <ChefHat className="w-3.5 h-3.5" />
-            <span>Apply as Seller</span>
-            {myApplication && (
-              <span className="text-[9px] px-1 py-0.2 rounded font-bold uppercase bg-amber-200 text-amber-900">
-                {myApplication.status}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => {
-              onClose();
-              setIsAuthModalOpen(true);
-            }}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 bg-orange-50 text-orange-700 border border-orange-200"
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span>Vendor Portal</span>
-          </button>
-
-          {role === 'vendor' && (
-            <button
-              onClick={() => setActiveTab('store_settings')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 flex-shrink-0 ${
-                activeTab === 'store_settings'
-                  ? 'bg-orange-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 border border-slate-200'
-              }`}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>Store</span>
-            </button>
-          )}
-        </div>
+        )}
 
         {/* Desktop Left Settings Sidebar (Hidden on Mobile) */}
         <div className="hidden md:flex w-64 bg-slate-50 border-r border-slate-200 p-6 flex-col justify-between flex-shrink-0">
@@ -401,22 +470,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Right Settings Content */}
-        <div className="flex-1 p-4 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[calc(92vh-110px)] md:max-h-[85vh]">
+        {/* Content Panel (Shown on Desktop ALWAYS, and on Mobile when mobileScreen === 'detail') */}
+        <div className={`flex-1 p-4 sm:p-8 flex flex-col justify-between overflow-y-auto h-full ${mobileScreen === 'menu' ? 'hidden md:flex' : 'flex'}`}>
           <div>
-            {/* Desktop Top Close Button */}
-            <div className="hidden md:flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
-              <h4 className="text-lg font-bold text-slate-900 font-['Outfit']">
-                {activeTab === 'profile' && 'Personal Profile'}
-                {activeTab === 'addresses' && 'Saved Delivery Locations'}
-                {activeTab === 'payments' && 'Payment Preferences'}
-                {activeTab === 'notifications' && 'Notification Settings'}
-                {activeTab === 'seller_application' && 'Vendor Partner Application'}
-                {activeTab === 'store_settings' && 'Store Configuration'}
-              </h4>
+            {/* Header with Back Button on Mobile */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100 mb-6">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMobileScreen('menu')}
+                  className="md:hidden p-1.5 -ml-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 text-xs font-bold"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 font-['Outfit']">
+                  {activeTab === 'profile' && 'Personal Profile'}
+                  {activeTab === 'addresses' && 'Saved Delivery Locations'}
+                  {activeTab === 'payments' && 'Payment Preferences'}
+                  {activeTab === 'notifications' && 'Notification Settings'}
+                  {activeTab === 'seller_application' && 'Vendor Partner Application'}
+                  {activeTab === 'store_settings' && 'Store Configuration'}
+                </h4>
+              </div>
               <button
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition"
               >
                 <X className="w-5 h-5" />
               </button>
