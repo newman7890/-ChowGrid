@@ -88,9 +88,11 @@ interface AppContextType {
   simulateSubscriptionExpiry: (storeId: string) => void;
 
   // Admin actions
-  reviewApplication: (appId: string, status: 'approved' | 'rejected' | 'suspended') => void;
+  reviewApplication: (appId: string, status: 'approved' | 'rejected' | 'suspended', rejectionReason?: string) => void;
   toggleStoreLock: (storeId: string) => void;
   verifyDeliveryOtp: (orderId: string, inputOtp: string) => { success: boolean; message: string };
+  updateUserRole: (userId: string, newRole: UserRole) => void;
+  deleteUserAccount: (userId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -812,11 +814,89 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Admin Functions
   const reviewApplication = (
     appId: string,
-    status: 'approved' | 'rejected' | 'suspended'
+    status: 'approved' | 'rejected' | 'suspended',
+    rejectionReason?: string
   ) => {
+    const app = applications.find((a) => a.id === appId);
+    if (!app) return;
+
+    // 1. Update application status & rejection notes
     setApplications((prev) =>
-      prev.map((a) => (a.id === appId ? { ...a, status } : a))
+      prev.map((a) => (a.id === appId ? { ...a, status, notes: rejectionReason || a.notes } : a))
     );
+
+    // 2. If approved, automatically create a new active Store in the marketplace
+    if (status === 'approved') {
+      const storeId = `store-${Date.now()}`;
+      const newStore: Store = {
+        id: storeId,
+        vendorId: app.id,
+        name: app.businessName,
+        tagline: `Authentic ${app.foodType} specialties by ${app.applicantName}`,
+        logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80',
+        coverUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=80',
+        rating: 5.0,
+        reviewCount: 0,
+        prepTimeEstimate: '20-30 min',
+        isOpen: true,
+        scheduledHours: 'Mon-Sat: 8:00 AM - 9:00 PM',
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+        gracePeriodEndsAt: new Date(Date.now() + 37 * 24 * 3600 * 1000).toISOString(),
+        monthlyFee: 150,
+        category: app.foodType || 'Local Ghanaian',
+        address: app.storeAddress,
+        phone: app.phone,
+        isFeatured: true,
+        isPopular: false,
+      };
+
+      setStores((prev) => [newStore, ...prev]);
+
+      // 3. Promote or create the vendor user account
+      setUsers((prev) => {
+        const existingIdx = prev.findIndex(
+          (u) => u.email.toLowerCase() === app.email.toLowerCase() || u.phone === app.phone
+        );
+        if (existingIdx >= 0) {
+          const updated = [...prev];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            role: 'vendor',
+            vendorStoreId: storeId,
+          };
+          return updated;
+        } else {
+          const newVendorUser: UserAccount = {
+            id: `user-vendor-${Date.now()}`,
+            name: app.applicantName,
+            email: app.email,
+            phone: app.phone,
+            role: 'vendor',
+            vendorStoreId: storeId,
+            deliveryAddress: app.storeAddress,
+          };
+          return [...prev, newVendorUser];
+        }
+      });
+    }
+  };
+
+  const updateUserRole = (userId: string, newRole: UserRole) => {
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
+    );
+    if (currentUser?.id === userId) {
+      setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
+      setRole(newRole);
+    }
+  };
+
+  const deleteUserAccount = (userId: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+    if (currentUser?.id === userId) {
+      logout();
+    }
   };
 
   const toggleStoreLock = (storeId: string) => {
@@ -886,6 +966,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         simulateSubscriptionExpiry,
         reviewApplication,
         toggleStoreLock,
+        updateUserRole,
+        deleteUserAccount,
       }}
     >
       {children}
