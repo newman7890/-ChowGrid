@@ -90,38 +90,38 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
   const selectedStoreObj = stores.find((s) => s.id === selectedStoreFilter);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6 sm:space-y-10">
       {/* Warm, Natural Hero Banner */}
       {!selectedStoreFilter && !searchTerm && (
-        <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 p-8 sm:p-12 shadow-md text-white">
-          <div className="relative z-10 max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/20 text-white text-xs font-semibold backdrop-blur-md">
+        <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-orange-700 p-5 sm:p-12 shadow-md text-white">
+          <div className="relative z-10 max-w-2xl space-y-3 sm:space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] sm:text-xs font-semibold backdrop-blur-md">
               <Flame className="w-3.5 h-3.5 text-amber-200" />
               <span>Authentic Ghanaian Dishes & Custom Meals</span>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight font-['Outfit']">
+            <h1 className="text-2xl sm:text-5xl font-extrabold tracking-tight leading-tight font-['Outfit']">
               Fresh food from your favorite local kitchens.
             </h1>
-            <p className="text-orange-50 text-sm sm:text-base leading-relaxed max-w-xl">
+            <p className="text-orange-50 text-xs sm:text-base leading-relaxed max-w-xl">
               Build your custom Waakye with your favorite proteins and sides, or order fresh party jollof with verified delivery OTP security.
             </p>
-            <div className="pt-2 flex flex-wrap items-center gap-4">
+            <div className="pt-1 sm:pt-2 flex flex-wrap items-center gap-3 sm:gap-4">
               <button
                 onClick={() => {
                   const el = document.getElementById('dishes-section');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl text-sm shadow-sm transition active:scale-95"
+                className="w-full sm:w-auto px-5 py-2.5 sm:px-6 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl sm:rounded-2xl text-xs sm:text-sm shadow-sm transition active:scale-95 text-center"
               >
                 Explore Menus & Customizer
               </button>
               <div className="flex items-center gap-3 text-xs text-orange-100 font-medium">
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
                   <span>Fair Pricing</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" />
                   <span>Dual OTP Delivery</span>
                 </div>
               </div>
@@ -132,38 +132,38 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
 
       {/* Selected Store Active Filter Bar */}
       {selectedStoreObj && (
-        <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-xs">
+        <div className="p-3.5 sm:p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-3">
             <img
               src={selectedStoreObj.logoUrl}
               alt={selectedStoreObj.name}
-              className="w-12 h-12 rounded-xl object-cover border border-slate-200"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-cover border border-slate-200"
             />
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-slate-900 text-base font-['Outfit']">{selectedStoreObj.name}</h3>
-                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-md font-medium border border-orange-200">
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base font-['Outfit']">{selectedStoreObj.name}</h3>
+                <span className="text-[10px] sm:text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-md font-medium border border-orange-200">
                   {selectedStoreObj.prepTimeEstimate} prep
                 </span>
               </div>
-              <p className="text-xs text-slate-500">{selectedStoreObj.tagline}</p>
+              <p className="text-xs text-slate-500 line-clamp-1">{selectedStoreObj.tagline}</p>
             </div>
           </div>
           <button
             onClick={() => setSelectedStoreFilter(null)}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
+            className="px-3 py-1.5 sm:px-4 sm:py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition"
           >
-            Show All Stores
+            All Stores
           </button>
         </div>
       )}
 
       {/* Tabs & Search Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-200 pb-3 sm:pb-4">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition ${
               activeTab === 'all'
                 ? 'bg-orange-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
@@ -173,7 +173,7 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('favorites')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
               activeTab === 'favorites'
                 ? 'bg-orange-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
@@ -184,13 +184,13 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
           </button>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full">
+        {/* Category Pills with smooth hidden scrollbar */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-full no-scrollbar">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition flex-shrink-0 ${
                 selectedCategory === cat
                   ? 'bg-orange-100 text-orange-800 border border-orange-300 font-bold'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
