@@ -98,17 +98,20 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // One-time purge of legacy mock data stored in local storage
-const CLEAN_STORAGE_KEY = 'chowgrid_storage_v4_purged';
+const CLEAN_STORAGE_KEY = 'chowgrid_storage_v5_purged';
 if (typeof window !== 'undefined' && localStorage.getItem(CLEAN_STORAGE_KEY) !== 'true') {
   [
     'chowgrid_users',
     'chowgrid_current_user',
     'chowgrid_role',
+    'chowgrid_stores',
+    'chowgrid_foods',
     'chowgrid_orders',
     'chowgrid_apps',
     'chowgrid_reviews',
     'chowgrid_cart',
     'chowgrid_favs',
+    'chowgrid_storage_v4_purged',
   ].forEach((key) => localStorage.removeItem(key));
   localStorage.setItem(CLEAN_STORAGE_KEY, 'true');
 }
