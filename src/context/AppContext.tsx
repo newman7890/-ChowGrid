@@ -97,10 +97,26 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// One-time purge of legacy mock data stored in local storage
+const CLEAN_STORAGE_KEY = 'chowgrid_storage_v4_purged';
+if (typeof window !== 'undefined' && localStorage.getItem(CLEAN_STORAGE_KEY) !== 'true') {
+  [
+    'chowgrid_users',
+    'chowgrid_current_user',
+    'chowgrid_role',
+    'chowgrid_orders',
+    'chowgrid_apps',
+    'chowgrid_reviews',
+    'chowgrid_cart',
+    'chowgrid_favs',
+  ].forEach((key) => localStorage.removeItem(key));
+  localStorage.setItem(CLEAN_STORAGE_KEY, 'true');
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const saved = localStorage.getItem('chowgrid_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
@@ -111,32 +127,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (parsed.email?.toLowerCase() === 'newm5811@gmail.com') {
           parsed.role = 'admin';
           parsed.name = 'Newman (Administrator)';
-          localStorage.setItem('chowgrid_current_user', JSON.stringify(parsed));
-          localStorage.setItem('chowgrid_role', 'admin');
         }
         return parsed;
       } catch (e) {
-        // fallback
+        return null;
       }
     }
-    return INITIAL_USERS[0];
+    return null;
   });
 
   const [role, setRole] = useState<UserRole>(() => {
-    const savedUser = localStorage.getItem('chowgrid_current_user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        if (parsed.email?.toLowerCase() === 'newm5811@gmail.com') return 'admin';
-      } catch (e) {}
-    }
-    return (localStorage.getItem('chowgrid_role') as UserRole) || 'customer';
+    const savedRole = localStorage.getItem('chowgrid_role') as UserRole;
+    return savedRole || 'customer';
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const [activeVendorStoreId, setActiveVendorStoreId] = useState<string>('store-1');
-  const [activeTrackOrderId, setActiveTrackOrderId] = useState<string | null>('order-1045');
+  const [activeTrackOrderId, setActiveTrackOrderId] = useState<string | null>(null);
 
   const [stores, setStores] = useState<Store[]>(() => {
     const saved = localStorage.getItem('chowgrid_stores');
@@ -150,17 +158,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [orders, setOrders] = useState<Order[]>(() => {
     const saved = localStorage.getItem('chowgrid_orders');
-    return saved ? JSON.parse(saved) : INITIAL_ORDERS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [applications, setApplications] = useState<VendorApplication[]>(() => {
     const saved = localStorage.getItem('chowgrid_apps');
-    return saved ? JSON.parse(saved) : INITIAL_APPLICATIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [reviews, setReviews] = useState<Review[]>(() => {
     const saved = localStorage.getItem('chowgrid_reviews');
-    return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [cart, setCart] = useState<CartItem[]>(() => {
@@ -170,7 +178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('chowgrid_favs');
-    return saved ? JSON.parse(saved) : ['store-1'];
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Automatically enforce admin role for newm5811@gmail.com
