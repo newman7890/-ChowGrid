@@ -13,6 +13,7 @@ import {
   UserCheck,
   Store,
   Settings,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -156,10 +157,48 @@ export const Header: React.FC<HeaderProps> = ({
                       <div className="p-2.5 border-b border-slate-100">
                         <p className="text-xs font-bold text-slate-900">{currentUser.name}</p>
                         <p className="text-[11px] text-slate-500 truncate">{currentUser.email || currentUser.phone}</p>
-                        <span className="inline-block mt-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200">
-                          {currentUser.role} Account
+                        <span
+                          className={`inline-block mt-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
+                            currentUser.role === 'admin'
+                              ? 'bg-purple-50 text-purple-700 border-purple-200'
+                              : currentUser.role === 'vendor'
+                              ? 'bg-orange-50 text-orange-700 border-orange-200'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {currentUser.role === 'admin'
+                            ? '🛡️ Platform Administrator'
+                            : currentUser.role === 'vendor'
+                            ? '🍳 Vendor Partner'
+                            : 'Customer Account'}
                         </span>
                       </div>
+
+                      {currentUser.role === 'admin' && (
+                        <button
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            setRole('admin');
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs font-bold text-purple-700 hover:bg-purple-50 rounded-xl transition flex items-center gap-2"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                          <span>Admin Console</span>
+                        </button>
+                      )}
+
+                      {currentUser.role === 'vendor' && (
+                        <button
+                          onClick={() => {
+                            setIsProfileMenuOpen(false);
+                            setRole('vendor');
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50 rounded-xl transition flex items-center gap-2"
+                        >
+                          <Store className="w-3.5 h-3.5 text-orange-600" />
+                          <span>Kitchen Hub</span>
+                        </button>
+                      )}
 
                       {currentUser.role === 'customer' && (
                         <button

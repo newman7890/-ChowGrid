@@ -103,10 +103,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     const saved = localStorage.getItem('chowgrid_current_user');
-    return saved ? JSON.parse(saved) : INITIAL_USERS[0];
+    if (saved) {
+      try {
+        const parsed: UserAccount = JSON.parse(saved);
+        if (parsed.email?.toLowerCase() === 'newm5811@gmail.com') {
+          parsed.role = 'admin';
+          parsed.name = 'Newman (Administrator)';
+          localStorage.setItem('chowgrid_current_user', JSON.stringify(parsed));
+          localStorage.setItem('chowgrid_role', 'admin');
+        }
+        return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_USERS[0];
   });
 
   const [role, setRole] = useState<UserRole>(() => {
+    const savedUser = localStorage.getItem('chowgrid_current_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.email?.toLowerCase() === 'newm5811@gmail.com') return 'admin';
+      } catch (e) {}
+    }
     return (localStorage.getItem('chowgrid_role') as UserRole) || 'customer';
   });
 
@@ -149,6 +170,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const saved = localStorage.getItem('chowgrid_favs');
     return saved ? JSON.parse(saved) : ['store-1'];
   });
+
+  // Automatically enforce admin role for newm5811@gmail.com
+  useEffect(() => {
+    if (currentUser?.email?.toLowerCase() === 'newm5811@gmail.com' && currentUser.role !== 'admin') {
+      const updated: UserAccount = {
+        ...currentUser,
+        role: 'admin',
+        name: 'Newman (Administrator)',
+      };
+      setCurrentUser(updated);
+      setRole('admin');
+      localStorage.setItem('chowgrid_current_user', JSON.stringify(updated));
+      localStorage.setItem('chowgrid_role', 'admin');
+    }
+  }, [currentUser]);
 
   // Save to localStorage
   useEffect(() => {
