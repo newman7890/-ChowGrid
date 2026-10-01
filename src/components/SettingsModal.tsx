@@ -314,25 +314,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
 
-              <button
-                onClick={() => {
-                  onClose();
-                  setIsAuthModalOpen(true);
-                }}
-                className="w-full flex items-center justify-between p-3.5 rounded-2xl hover:bg-orange-50 transition text-left pt-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-orange-100 text-orange-700">
-                    <Store className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-sm text-orange-950 block">Vendor Portal</span>
-                    <span className="text-xs text-orange-700">Sign in to kitchen dashboard</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-orange-600" />
-              </button>
-
               {role === 'vendor' && (
                 <button
                   onClick={() => openMobileDetail('store_settings')}
@@ -436,17 +417,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {myApplication.status}
                   </span>
                 )}
-              </button>
-
-              <button
-                onClick={() => {
-                  onClose();
-                  setIsAuthModalOpen(true);
-                }}
-                className="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 text-slate-700 hover:bg-orange-50 hover:text-orange-700 font-semibold border border-dashed border-slate-200"
-              >
-                <Store className="w-4 h-4 text-orange-600" />
-                <span>Vendor Portal</span>
               </button>
 
               {role === 'vendor' && (
