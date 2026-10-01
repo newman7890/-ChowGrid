@@ -176,7 +176,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-  return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
       <div className="relative w-full max-w-3xl bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-4 sm:my-8 flex flex-col md:flex-row min-h-[520px] md:min-h-[580px] max-h-[92vh] md:max-h-[85vh]">
         {/* Mobile Header (Hidden on Desktop) */}
