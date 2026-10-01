@@ -13,6 +13,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { FoodItem } from './types';
 import { ShieldCheck } from 'lucide-react';
+import chowgridLogo from './assets/chowgrid-logo.png';
 
 const MainAppContent: React.FC = () => {
   const { role, addToCart, setActiveTrackOrderId } = useApp();
@@ -55,7 +56,7 @@ const MainAppContent: React.FC = () => {
       <footer className="border-t border-slate-200 bg-white py-8 mt-16 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <img src="/chowgrid-logo.png" alt="ChowGrid" className="w-8 h-8 object-contain rounded-lg border border-slate-100" />
+            <img src={chowgridLogo} alt="ChowGrid" className="w-8 h-8 object-contain rounded-lg border border-slate-100" />
             <div>
               <span className="font-bold text-slate-900 font-['Outfit']">ChowGrid</span>
               <span className="text-slate-400 mx-1.5">•</span>

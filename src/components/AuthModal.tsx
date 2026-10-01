@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import chowgridLogo from '../assets/chowgrid-logo.png';
 import {
   X,
   Lock,
@@ -74,7 +75,7 @@ export const AuthModal: React.FC = () => {
         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
             <img
-              src="/chowgrid-logo.png"
+              src={chowgridLogo}
               alt="ChowGrid"
               className="w-11 h-11 object-contain rounded-xl border border-slate-100 shadow-xs"
             />

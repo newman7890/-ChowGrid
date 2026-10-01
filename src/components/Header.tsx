@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
+import chowgridLogo from '../assets/chowgrid-logo.png';
 import {
   ShoppingBag,
   Store as StoreIcon,
@@ -63,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setRole('customer')}
           >
             <img
-              src="/chowgrid-logo.png"
+              src={chowgridLogo}
               alt="ChowGrid"
               className="h-12 w-12 object-contain rounded-xl shadow-xs border border-slate-100"
             />
