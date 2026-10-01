@@ -1,5 +1,5 @@
 -- ==============================================================================
--- ChowGrid Ghanaian Food Marketplace - Initial Seed Data
+-- ChowGrid Ghanaian Food Marketplace - Initial Seed Data (Valid RFC4122 UUIDs)
 -- ==============================================================================
 
 -- 1. Insert Initial Food Stores
@@ -131,29 +131,29 @@ on conflict (id) do nothing;
 -- 3. Insert Modifier Groups for Waakye Customizer
 insert into public.modifier_groups (id, food_item_id, name, min_selection, max_selection, required, allow_quantity_multiplier, sort_order)
 values
-  ('m1111111-1111-1111-1111-111111111111', 'f1111111-1111-1111-1111-111111111111', 'Choose Your Protein', 1, 4, true, true, 1),
-  ('m2222222-2222-2222-2222-222222222222', 'f1111111-1111-1111-1111-111111111111', 'Essential Sides & Garnish', 0, 5, false, true, 2),
-  ('m3333333-3333-3333-3333-333333333333', 'f1111111-1111-1111-1111-111111111111', 'Sauce & Stew Preferences', 1, 1, true, false, 3)
+  ('e1111111-1111-1111-1111-111111111111', 'f1111111-1111-1111-1111-111111111111', 'Choose Your Protein', 1, 4, true, true, 1),
+  ('e2222222-2222-2222-2222-222222222222', 'f1111111-1111-1111-1111-111111111111', 'Essential Sides & Garnish', 0, 5, false, true, 2),
+  ('e3333333-3333-3333-3333-333333333333', 'f1111111-1111-1111-1111-111111111111', 'Sauce & Stew Preferences', 1, 1, true, false, 3)
 on conflict (id) do nothing;
 
 -- 4. Insert Modifier Options
 insert into public.modifier_options (id, modifier_group_id, name, price, is_default, sort_order)
 values
   -- Proteins
-  ('o1111111-1111-1111-1111-111111111111', 'm1111111-1111-1111-1111-111111111111', 'Fried Hard-Boiled Egg', 5.00, true, 1),
-  ('o2222222-2222-2222-2222-222222222222', 'm1111111-1111-1111-1111-111111111111', 'Soft Stewed Wele (Cow Skin)', 8.00, true, 2),
-  ('o3333333-3333-3333-3333-333333333333', 'm1111111-1111-1111-1111-111111111111', 'Tender Stewed Beef (Chofi)', 15.00, false, 3),
-  ('o4444444-4444-4444-4444-444444444444', 'm1111111-1111-1111-1111-111111111111', 'Crispy Fried Fish Chunk', 18.00, false, 4),
-  ('o5555555-5555-5555-5555-555555555555', 'm1111111-1111-1111-1111-111111111111', 'Spicy Fried Guinea Fowl (Akokɔ)', 22.00, false, 5),
+  ('01111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', 'Fried Hard-Boiled Egg', 5.00, true, 1),
+  ('02222222-2222-2222-2222-222222222222', 'e1111111-1111-1111-1111-111111111111', 'Soft Stewed Wele (Cow Skin)', 8.00, true, 2),
+  ('03333333-3333-3333-3333-333333333333', 'e1111111-1111-1111-1111-111111111111', 'Tender Stewed Beef (Chofi)', 15.00, false, 3),
+  ('04444444-4444-4444-4444-444444444444', 'e1111111-1111-1111-1111-111111111111', 'Crispy Fried Fish Chunk', 18.00, false, 4),
+  ('05555555-5555-5555-5555-555555555555', 'e1111111-1111-1111-1111-111111111111', 'Spicy Fried Guinea Fowl (Akokɔ)', 22.00, false, 5),
   
   -- Sides
-  ('o6666666-6666-6666-6666-666666666666', 'm2222222-2222-2222-2222-222222222222', 'Spaghetti Talia Noodles', 4.00, true, 1),
-  ('o7777777-7777-7777-7777-777777777777', 'm2222222-2222-2222-2222-222222222222', 'Moist Gari Foto', 4.00, true, 2),
-  ('o8888888-8888-8888-8888-888888888888', 'm2222222-2222-2222-2222-222222222222', 'Sweet Fried Plantain (Kelewele)', 8.00, false, 3),
-  ('o9999999-9999-9999-9999-999999999999', 'm2222222-2222-2222-2222-222222222222', 'Fresh Mixed Salad & Mayonnaise', 6.00, false, 4),
+  ('06666666-6666-6666-6666-666666666666', 'e2222222-2222-2222-2222-222222222222', 'Spaghetti Talia Noodles', 4.00, true, 1),
+  ('07777777-7777-7777-7777-777777777777', 'e2222222-2222-2222-2222-222222222222', 'Moist Gari Foto', 4.00, true, 2),
+  ('08888888-8888-8888-8888-888888888888', 'e2222222-2222-2222-2222-222222222222', 'Sweet Fried Plantain (Kelewele)', 8.00, false, 3),
+  ('09999999-9999-9999-9999-999999999999', 'e2222222-2222-2222-2222-222222222222', 'Fresh Mixed Salad & Mayonnaise', 6.00, false, 4),
   
   -- Sauces
-  ('oa111111-1111-1111-1111-111111111111', 'm3333333-3333-3333-3333-333333333333', 'Rich Black Shito + Tomato Stew Mix', 0.00, true, 1),
-  ('ob222222-2222-2222-2222-222222222222', 'm3333333-3333-3333-3333-333333333333', 'Extra Hot Shito Only', 0.00, false, 2),
-  ('oc333333-3333-3333-3333-333333333333', 'm3333333-3333-3333-3333-333333333333', 'Mild Stew Only (No Shito)', 0.00, false, 3)
+  ('0aaaaaaa-1111-1111-1111-111111111111', 'e3333333-3333-3333-3333-333333333333', 'Rich Black Shito + Tomato Stew Mix', 0.00, true, 1),
+  ('0bbbbbbb-2222-2222-2222-222222222222', 'e3333333-3333-3333-3333-333333333333', 'Extra Hot Shito Only', 0.00, false, 2),
+  ('0ccccccc-3333-3333-3333-333333333333', 'e3333333-3333-3333-3333-333333333333', 'Mild Stew Only (No Shito)', 0.00, false, 3)
 on conflict (id) do nothing;
