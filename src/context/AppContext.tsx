@@ -19,6 +19,8 @@ import {
   INITIAL_REVIEWS,
   INITIAL_USERS,
 } from '../data/mockData';
+import { SupabaseService } from '../services/supabaseService';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 interface AppContextType {
   role: UserRole;
@@ -179,9 +181,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('chowgrid_cart', JSON.stringify(cart));
   }, [cart]);
 
+  // Load initial data from Supabase if configured
   useEffect(() => {
-    localStorage.setItem('chowgrid_favs', JSON.stringify(favoriteStoreIds));
-  }, [favoriteStoreIds]);
+    if (!isSupabaseConfigured) return;
+
+    const loadSupabaseData = async () => {
+      try {
+        const [dbStores, dbFoods, dbOrders] = await Promise.all([
+          SupabaseService.getStores(),
+          SupabaseService.getFoodItems(),
+          SupabaseService.getOrders(),
+        ]);
+
+        if (dbStores && dbStores.length > 0) setStores(dbStores);
+        if (dbFoods && dbFoods.length > 0) setFoodItems(dbFoods);
+        if (dbOrders && dbOrders.length > 0) setOrders(dbOrders);
+      } catch (err) {
+        console.warn('Using local dataset as Supabase fallback:', err);
+      }
+    };
+
+    loadSupabaseData();
+
+    // Subscribe to Realtime order notifications
+    const unsubscribe = SupabaseService.subscribeToOrders((updatedOrder) => {
+      setOrders((prev) => {
+        const exists = prev.some((o) => o.id === updatedOrder.id);
+        if (exists) {
+          return prev.map((o) => (o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o));
+        }
+        return [updatedOrder, ...prev];
+      });
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // Auth operations
   const loginAsUser = (user: UserAccount) => {
@@ -374,6 +410,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) => [newOrder, ...prev]);
     clearCart();
     setActiveTrackOrderId(newOrder.id);
+
+    // Sync to Supabase in background
+    if (isSupabaseConfigured) {
+      SupabaseService.createOrder(newOrder).catch((e) =>
+        console.warn('Background Supabase order sync failed:', e)
+      );
+    }
+
     return newOrder;
   };
 
@@ -381,6 +425,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: 'cancelled' } : o))
     );
+    if (isSupabaseConfigured) {
+      SupabaseService.updateOrderStatus(orderId, 'cancelled');
+    }
   };
 
   const reorder = (orderId: string) => {
@@ -403,6 +450,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStores((prev) =>
       prev.map((s) => (s.id === storeId ? { ...s, isOpen } : s))
     );
+    if (isSupabaseConfigured) {
+      SupabaseService.updateStore(storeId, { isOpen });
+    }
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus) => {
@@ -422,6 +472,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return o;
       })
     );
+
+    if (isSupabaseConfigured) {
+      SupabaseService.updateOrderStatus(orderId, status);
+    }
   };
 
   const toggleFoodAvailability = (foodItemId: string) => {
@@ -527,6 +581,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       appliedAt: new Date().toISOString(),
     };
     setApplications((prev) => [newApp, ...prev]);
+
+    if (isSupabaseConfigured) {
+      SupabaseService.submitApplication(newApp).catch((e) =>
+        console.warn('Background Supabase application sync failed:', e)
+      );
+    }
+
     return newApp;
   };
 
