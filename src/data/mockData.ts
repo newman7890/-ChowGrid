@@ -29,6 +29,14 @@ export const INITIAL_USERS: UserAccount[] = [
     avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
   },
   {
+    id: 'user-admin-newm',
+    name: 'Newman (Admin)',
+    email: 'newm5811@gmail.com',
+    phone: '+233 24 000 5811',
+    role: 'admin',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+  },
+  {
     id: 'user-admin-1',
     name: 'System Superadmin',
     email: 'admin@chowgrid.gh',

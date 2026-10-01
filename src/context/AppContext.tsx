@@ -209,22 +209,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         SupabaseService.getUserProfile(session.user.id).then((profile) => {
-          if (profile) {
-            const userAcc: UserAccount = {
-              id: profile.id,
-              name: profile.full_name || session.user.email?.split('@')[0] || 'User',
-              email: profile.email || session.user.email || '',
-              phone: profile.phone || '',
-              role: (profile.role as UserRole) || 'customer',
-              avatarUrl: profile.avatar_url,
-              deliveryAddress: profile.delivery_address || 'Accra, Ghana',
-              vendorStoreId: profile.vendor_store_id,
-            };
-            setCurrentUser(userAcc);
-            setRole(userAcc.role);
-            if (userAcc.role === 'vendor' && userAcc.vendorStoreId) {
-              setActiveVendorStoreId(userAcc.vendorStoreId);
-            }
+          const isAdminEmail = session.user.email?.toLowerCase() === 'newm5811@gmail.com';
+          const resolvedRole: UserRole = isAdminEmail
+            ? 'admin'
+            : ((profile?.role as UserRole) || 'customer');
+
+          const userAcc: UserAccount = {
+            id: profile?.id || session.user.id,
+            name: profile?.full_name || session.user.email?.split('@')[0] || 'User',
+            email: profile?.email || session.user.email || '',
+            phone: profile?.phone || '',
+            role: resolvedRole,
+            avatarUrl: profile?.avatar_url,
+            deliveryAddress: profile?.delivery_address || 'Accra, Ghana',
+            vendorStoreId: profile?.vendor_store_id,
+          };
+          setCurrentUser(userAcc);
+          setRole(userAcc.role);
+          if (userAcc.role === 'vendor' && userAcc.vendorStoreId) {
+            setActiveVendorStoreId(userAcc.vendorStoreId);
           }
         });
       }
@@ -234,12 +237,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         const profile = await SupabaseService.getUserProfile(session.user.id);
+        const isAdminEmail = session.user.email?.toLowerCase() === 'newm5811@gmail.com';
+        const resolvedRole: UserRole = isAdminEmail
+          ? 'admin'
+          : ((profile?.role || session.user.user_metadata?.role || 'customer') as UserRole);
+
         const userAcc: UserAccount = {
           id: session.user.id,
           name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           phone: profile?.phone || session.user.user_metadata?.phone || '',
-          role: (profile?.role || session.user.user_metadata?.role || 'customer') as UserRole,
+          role: resolvedRole,
           avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
           deliveryAddress: profile?.delivery_address || 'Accra, Ghana',
           vendorStoreId: profile?.vendor_store_id,
@@ -285,18 +293,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     targetRole: UserRole = 'customer'
   ): Promise<{ success: boolean; message: string }> => {
     const clean = identifier.trim();
+    const isAdminEmail = clean.toLowerCase() === 'newm5811@gmail.com';
 
     // 1. Try real Supabase Auth if it's an email and Supabase is configured
     if (isSupabaseConfigured && clean.includes('@') && password) {
       const res = await SupabaseService.signIn(clean, password);
       if (res.user) {
         const profile = await SupabaseService.getUserProfile(res.user.id);
+        const resolvedRole: UserRole = isAdminEmail
+          ? 'admin'
+          : ((profile?.role || res.user.user_metadata?.role || targetRole) as UserRole);
+
         const userAcc: UserAccount = {
           id: res.user.id,
           name: profile?.full_name || res.user.user_metadata?.full_name || clean.split('@')[0],
           email: clean,
           phone: profile?.phone || '+233 24 000 0000',
-          role: (profile?.role || res.user.user_metadata?.role || targetRole) as UserRole,
+          role: resolvedRole,
           avatarUrl: profile?.avatar_url,
           deliveryAddress: profile?.delivery_address || 'Accra, Ghana',
         };
@@ -309,13 +322,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const lower = clean.toLowerCase();
     const found = users.find(
       (u) =>
-        (u.email.toLowerCase() === lower || u.phone.includes(clean)) &&
-        (!targetRole || u.role === targetRole)
+        u.email.toLowerCase() === lower || u.phone.includes(clean)
     );
 
     if (found) {
-      loginAsUser(found);
-      return { success: true, message: `Welcome back, ${found.name}!` };
+      const accountToLogin = isAdminEmail ? { ...found, role: 'admin' as UserRole } : found;
+      loginAsUser(accountToLogin);
+      return { success: true, message: `Welcome back, ${accountToLogin.name}!` };
+    }
+
+    // If newm5811@gmail.com logs in without prior registration, auto-create as admin
+    if (isAdminEmail) {
+      const adminUser: UserAccount = {
+        id: `admin-${Date.now()}`,
+        name: 'Newman (Administrator)',
+        email: 'newm5811@gmail.com',
+        phone: '+233 24 000 5811',
+        role: 'admin',
+        deliveryAddress: 'Accra, Ghana',
+      };
+      setUsers((prev) => [...prev, adminUser]);
+      loginAsUser(adminUser);
+      return { success: true, message: `Admin access granted! Welcome, ${adminUser.name}!` };
     }
 
     // 3. Fallback Auto-Registration for quick customer sign-in
@@ -335,7 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return {
       success: false,
-      message: `No ${targetRole} account found for "${clean}". Please verify your credentials or select a quick demo profile.`,
+      message: `No ${targetRole} account found for "${clean}". Please verify your credentials.`,
     };
   };
 
