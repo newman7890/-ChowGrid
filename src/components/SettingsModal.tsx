@@ -17,6 +17,11 @@ import {
   Trash2,
   Save,
   DollarSign,
+  ChefHat,
+  FileText,
+  Sparkles,
+  AlertCircle,
+  BadgeCheck,
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -33,15 +38,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     role,
     stores,
     activeVendorStoreId,
-    updateStoreStatus,
+    applications,
+    submitVendorApplication,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'payments' | 'notifications' | 'store_settings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'payments' | 'notifications' | 'seller_application' | 'store_settings'>('profile');
 
   // Customer Profile State
   const [name, setName] = useState(currentUser?.name || 'Kwame Mensah');
   const [email, setEmail] = useState(currentUser?.email || 'kwame.mensah@gmail.com');
   const [phone, setPhone] = useState(currentUser?.phone || '+233 24 991 2233');
+
+  // Seller Application Form State
+  const [appBusinessName, setAppBusinessName] = useState('');
+  const [appCategory, setAppCategory] = useState('Waakye & Local Dishes');
+  const [appAddress, setAppAddress] = useState('');
+  const [appGhanaCard, setAppGhanaCard] = useState('');
+  const [appPhone, setAppPhone] = useState(currentUser?.phone || '+233 ');
+  const [appEmail, setAppEmail] = useState(currentUser?.email || '');
+  const [appApplicantName, setAppApplicantName] = useState(currentUser?.name || '');
+  const [appMomoPayout, setAppMomoPayout] = useState('+233 ');
+  const [appSubmitted, setAppSubmitted] = useState(false);
 
   // Saved Addresses State
   const [addresses, setAddresses] = useState<
@@ -81,11 +98,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Check if current user has an application
+  const myApplication = applications.find(
+    (a) =>
+      a.phone === currentUser?.phone ||
+      a.email === currentUser?.email ||
+      a.applicantName.toLowerCase() === currentUser?.name.toLowerCase()
+  );
+
   useEffect(() => {
     if (currentUser) {
       setName(currentUser.name);
       setEmail(currentUser.email);
       setPhone(currentUser.phone);
+      setAppApplicantName(currentUser.name);
+      setAppPhone(currentUser.phone);
+      setAppEmail(currentUser.email);
     }
   }, [currentUser]);
 
@@ -95,6 +123,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     e.preventDefault();
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleSellerApplicationSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!appBusinessName.trim() || !appAddress.trim() || !appGhanaCard.trim()) {
+      return;
+    }
+
+    submitVendorApplication({
+      applicantName: appApplicantName || name,
+      businessName: appBusinessName,
+      phone: appPhone || phone,
+      email: appEmail || email,
+      storeAddress: appAddress,
+      ghanaCardNumber: appGhanaCard,
+      foodType: appCategory,
+      notes: `MoMo Payout Number: ${appMomoPayout}`,
+    });
+
+    setAppSubmitted(true);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 3000);
   };
 
   const handleAddAddress = (e: React.FormEvent) => {
@@ -184,6 +234,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span>Notifications & SMS</span>
               </button>
 
+              <button
+                onClick={() => setActiveTab('seller_application')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center justify-between gap-2 ${
+                  activeTab === 'seller_application'
+                    ? 'bg-orange-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ChefHat className="w-4 h-4" />
+                  <span>Apply as Seller</span>
+                </div>
+                {myApplication && (
+                  <span
+                    className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
+                      myApplication.status === 'approved'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : myApplication.status === 'rejected'
+                        ? 'bg-rose-100 text-rose-800'
+                        : 'bg-amber-100 text-amber-800'
+                    }`}
+                  >
+                    {myApplication.status}
+                  </span>
+                )}
+              </button>
+
               {role === 'vendor' && (
                 <button
                   onClick={() => setActiveTab('store_settings')}
@@ -215,6 +292,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {activeTab === 'addresses' && 'Saved Delivery Locations'}
                 {activeTab === 'payments' && 'Payment Preferences'}
                 {activeTab === 'notifications' && 'Notification Settings'}
+                {activeTab === 'seller_application' && 'Vendor Partner Application'}
                 {activeTab === 'store_settings' && 'Store Configuration'}
               </h4>
               <button
@@ -496,6 +574,172 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     />
                   </label>
                 </div>
+              </div>
+            )}
+
+            {/* Tab: Apply as Seller / Vendor Application */}
+            {activeTab === 'seller_application' && (
+              <div className="space-y-5">
+                {/* Existing Application Banner */}
+                {myApplication ? (
+                  <div className="p-5 bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 bg-orange-600 text-white rounded-xl">
+                          <ChefHat className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-slate-900 text-sm font-['Outfit']">
+                            {myApplication.businessName}
+                          </h5>
+                          <p className="text-xs text-slate-500">Submitted on {new Date(myApplication.appliedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                          myApplication.status === 'approved'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : myApplication.status === 'rejected'
+                            ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
+                        }`}
+                      >
+                        {myApplication.status === 'pending' ? '⏳ KYC Review Pending' : myApplication.status}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 bg-white/80 rounded-xl border border-orange-100">
+                        <span className="text-slate-500 block font-medium">Food Category</span>
+                        <span className="text-slate-900 font-bold">{myApplication.foodType}</span>
+                      </div>
+                      <div className="p-3 bg-white/80 rounded-xl border border-orange-100">
+                        <span className="text-slate-500 block font-medium">Ghana Card ID</span>
+                        <span className="text-slate-900 font-bold">{myApplication.ghanaCardNumber}</span>
+                      </div>
+                      <div className="p-3 bg-white/80 rounded-xl border border-orange-100 sm:col-span-2">
+                        <span className="text-slate-500 block font-medium">Kitchen Address</span>
+                        <span className="text-slate-900 font-semibold">{myApplication.storeAddress}</span>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white/90 border border-orange-200/60 rounded-xl text-xs text-slate-600 flex items-start gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-800">Application Under Verification</span>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Our vendor onboarding team reviews hygiene standards and Ghana Card KYC. Once approved, your store will immediately go live on ChowGrid with full SaaS dashboard access!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Intro Promo Card */}
+                    <div className="p-4 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-2xl space-y-2 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-200" />
+                        <span className="text-xs font-bold tracking-wider uppercase text-amber-100">ChowGrid Vendor Partner</span>
+                      </div>
+                      <h5 className="text-base font-bold font-['Outfit']">
+                        Start Selling on ChowGrid
+                      </h5>
+                      <p className="text-xs text-orange-100 leading-relaxed">
+                        Flat monthly subscription (₵50–₵100/mo), 0% commission deductions, instant MoMo payouts, and dual-OTP verified delivery security.
+                      </p>
+                    </div>
+
+                    {/* Application Form */}
+                    <form onSubmit={handleSellerApplicationSubmit} className="space-y-3.5">
+                      <div className="space-y-1">
+                        <label className="text-xs text-slate-700 font-bold">Restaurant / Kitchen Name *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Mama Naa's Authentic Waakye Joint"
+                          value={appBusinessName}
+                          onChange={(e) => setAppBusinessName(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-700 font-bold">Main Food Category</label>
+                          <select
+                            value={appCategory}
+                            onChange={(e) => setAppCategory(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                          >
+                            <option value="Waakye & Local Dishes">Waakye & Local Dishes</option>
+                            <option value="Jollof & Grills">Jollof & Grills</option>
+                            <option value="Banku, Tilapia & Seafood">Banku, Tilapia & Seafood</option>
+                            <option value="Fried Rice & Fast Food">Fried Rice & Fast Food</option>
+                            <option value="Pastries, Bakery & Drinks">Pastries, Bakery & Drinks</option>
+                            <option value="Street Food & Snacks">Street Food & Snacks</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-700 font-bold">Ghana Card Number (KYC) *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="GHA-712839218-4"
+                            value={appGhanaCard}
+                            onChange={(e) => setAppGhanaCard(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs text-slate-700 font-bold">Kitchen Pickup Address (Accra / Ghana) *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. GA-234-9912, Boundary Road, East Legon, Accra"
+                          value={appAddress}
+                          onChange={(e) => setAppAddress(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-700 font-bold">Contact Phone Number *</label>
+                          <input
+                            type="text"
+                            required
+                            value={appPhone}
+                            onChange={(e) => setAppPhone(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs text-slate-700 font-bold">MoMo Payout Number *</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. +233 24 000 0000"
+                            value={appMomoPayout}
+                            onChange={(e) => setAppMomoPayout(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:border-orange-500"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full mt-2 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        <ChefHat className="w-4 h-4" />
+                        <span>Submit Vendor KYC Application</span>
+                      </button>
+                    </form>
+                  </>
+                )}
               </div>
             )}
 

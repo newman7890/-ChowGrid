@@ -70,6 +70,7 @@ interface AppContextType {
   reorder: (orderId: string) => void;
   toggleFavorite: (storeId: string) => void;
   addReview: (review: Omit<Review, 'id' | 'createdAt'>) => void;
+  submitVendorApplication: (data: Omit<VendorApplication, 'id' | 'status' | 'appliedAt'>) => VendorApplication;
 
   // Vendor actions
   updateStoreStatus: (storeId: string, isOpen: boolean) => void;
@@ -516,6 +517,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const submitVendorApplication = (
+    data: Omit<VendorApplication, 'id' | 'status' | 'appliedAt'>
+  ): VendorApplication => {
+    const newApp: VendorApplication = {
+      ...data,
+      id: `app-${Date.now()}`,
+      status: 'pending',
+      appliedAt: new Date().toISOString(),
+    };
+    setApplications((prev) => [newApp, ...prev]);
+    return newApp;
+  };
+
   // Admin Functions
   const reviewApplication = (
     appId: string,
@@ -578,6 +592,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reorder,
         toggleFavorite,
         addReview,
+        submitVendorApplication,
         updateStoreStatus,
         updateOrderStatus,
         toggleFoodAvailability,
