@@ -69,18 +69,18 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-md bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+        <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <img
               src={chowgridLogo}
               alt="ChowGrid"
-              className="w-11 h-11 object-contain rounded-xl border border-slate-100 shadow-xs"
+              className="w-10 h-10 sm:w-11 sm:h-11 object-contain rounded-xl border border-slate-100 shadow-xs"
             />
             <div>
-              <h3 className="text-xl font-bold text-slate-900 font-['Outfit']">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-900 font-['Outfit']">
                 {authMode === 'register'
                   ? 'Create Account'
                   : authMode === 'vendor_login'
@@ -105,13 +105,13 @@ export const AuthModal: React.FC = () => {
               setIsAuthModalOpen(false);
               setFeedback(null);
             }}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-200/60 transition"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-200/60 transition"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
           {/* Feedback */}
           {feedback && (
             <div
