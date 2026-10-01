@@ -40,6 +40,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     activeVendorStoreId,
     applications,
     submitVendorApplication,
+    setIsAuthModalOpen,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'payments' | 'notifications' | 'seller_application' | 'store_settings'>('profile');
@@ -259,6 +260,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     {myApplication.status}
                   </span>
                 )}
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  setIsAuthModalOpen(true);
+                }}
+                className="w-full text-left px-3.5 py-2.5 rounded-xl transition flex items-center gap-2.5 text-slate-700 hover:bg-orange-50 hover:text-orange-700 font-semibold border border-dashed border-slate-200"
+              >
+                <Store className="w-4 h-4 text-orange-600" />
+                <span>Vendor Portal</span>
               </button>
 
               {role === 'vendor' && (

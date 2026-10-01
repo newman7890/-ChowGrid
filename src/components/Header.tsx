@@ -101,19 +101,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Header Navigation */}
           <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-            {/* If Customer: Show "Sell on ChowGrid / Vendor Portal" button */}
-            {role === 'customer' && (
-              <button
-                onClick={() => {
-                  setIsAuthModalOpen(true);
-                }}
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition"
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span>Vendor Portal</span>
-              </button>
-            )}
-
             {/* If Vendor / Admin: Show Back to Marketplace link */}
             {role !== 'customer' && (
               <button
