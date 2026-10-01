@@ -15,6 +15,7 @@ import {
   ToggleLeft,
   ToggleRight,
   ShieldAlert,
+  CheckCircle2,
   X,
 } from 'lucide-react';
 
@@ -23,8 +24,8 @@ export const VendorDashboard: React.FC = () => {
     stores,
     foodItems,
     orders,
+    currentUser,
     activeVendorStoreId,
-    setActiveVendorStoreId,
     updateStoreStatus,
     updateOrderStatus,
     toggleFoodAvailability,
@@ -43,7 +44,10 @@ export const VendorDashboard: React.FC = () => {
 
   const [editingFood, setEditingFood] = useState<Partial<FoodItem> | null>(null);
 
-  const currentStore = stores.find((s) => s.id === activeVendorStoreId) || stores[0];
+  // Strictly lock to current seller's store
+  const currentStore =
+    stores.find((s) => s.id === currentUser?.vendorStoreId || s.id === activeVendorStoreId) ||
+    stores[0];
   const vendorOrders = orders.filter((o) => o.storeId === currentStore.id);
   const vendorFoods = foodItems.filter((f) => f.storeId === currentStore.id);
 
@@ -94,29 +98,31 @@ export const VendorDashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Top Store Selector & Status Banner */}
+      {/* Top Store Header & Status Banner */}
       <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
           <img
             src={currentStore.logoUrl}
             alt={currentStore.name}
-            className="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-50"
+            className="w-16 h-16 rounded-2xl object-cover border border-slate-200 bg-slate-50 shadow-xs flex-shrink-0"
           />
           <div>
-            <div className="flex items-center gap-2">
-              <select
-                value={activeVendorStoreId}
-                onChange={(e) => setActiveVendorStoreId(e.target.value)}
-                className="bg-slate-50 border border-slate-300 text-slate-900 font-bold rounded-xl px-3 py-1.5 text-base sm:text-lg focus:outline-none focus:border-orange-500 font-['Outfit']"
-              >
-                {stores.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-['Outfit'] tracking-tight">
+                {currentStore.name}
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                <span>My Kitchen Hub</span>
+              </span>
             </div>
-            <p className="text-xs text-slate-500 mt-1">{currentStore.scheduledHours}</p>
+            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 flex-wrap">
+              <span className="font-semibold text-orange-600">{currentStore.category}</span>
+              <span>•</span>
+              <span>{currentStore.address}</span>
+              <span>•</span>
+              <span>{currentStore.scheduledHours}</span>
+            </div>
           </div>
         </div>
 
