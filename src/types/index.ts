@@ -133,6 +133,7 @@ export interface Order {
 
 export interface VendorApplication {
   id: string;
+  applicantId?: string; // Supabase auth user UUID of the applicant
   applicantName: string;
   businessName: string;
   phone: string;

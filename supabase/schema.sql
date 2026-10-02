@@ -14,6 +14,7 @@ create table if not exists public.profiles (
     avatar_url text,
     role text not null check (role in ('customer', 'vendor', 'admin')) default 'customer',
     vendor_store_id uuid,
+    delivery_address text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -204,6 +205,10 @@ create policy "Anyone can view modifier options" on public.modifier_options for 
 -- User Profiles Policies
 create policy "Users can view all profiles" on public.profiles for select using (true);
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = id);
+create policy "Admins can update any profile" on public.profiles for update using (
+    auth.uid() in (select id from public.profiles where role = 'admin')
+);
+create policy "Users can insert own profile" on public.profiles for insert with check (auth.uid() = id);
 
 -- Orders Policies
 create policy "Customers can view own orders" on public.orders for select using (

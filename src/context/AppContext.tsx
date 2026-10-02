@@ -690,6 +690,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newApp: VendorApplication = {
       ...data,
       id: appId,
+      applicantId: currentUser?.id, // Link application to the auth user
       status: 'pending',
       appliedAt: new Date().toISOString(),
     };
@@ -731,9 +732,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // 2. If approved, automatically create a new active Store in the marketplace
     if (status === 'approved') {
       const storeId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `store-${Date.now()}`;
+      
+      // Use the applicantId (Supabase auth UUID) as the vendor owner
+      const vendorUserId = app.applicantId || undefined;
+
       const newStore: Store = {
         id: storeId,
-        vendorId: app.id,
+        vendorId: vendorUserId || storeId, // Use the auth UUID, not the application UUID
         name: app.businessName,
         tagline: `Authentic ${app.foodType} specialties by ${app.applicantName}`,
         logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80',
@@ -760,26 +765,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         SupabaseService.createStore(newStore);
       }
 
-      // 3. Promote or create the vendor user account
+      // 3. Promote the vendor user account — prefer applicantId (auth UUID) for reliable lookup
       setUsers((prev) => {
-        const existingIdx = prev.findIndex(
-          (u) => u.email.toLowerCase() === app.email.toLowerCase() || u.phone === app.phone
-        );
-        if (existingIdx >= 0) {
+        let foundIdx = -1;
+
+        // Primary: match by applicantId (Supabase auth UUID — most reliable)
+        if (vendorUserId) {
+          foundIdx = prev.findIndex((u) => u.id === vendorUserId);
+        }
+
+        // Fallback: match by email or phone
+        if (foundIdx < 0) {
+          foundIdx = prev.findIndex(
+            (u) => u.email.toLowerCase() === app.email.toLowerCase() || u.phone === app.phone
+          );
+        }
+
+        if (foundIdx >= 0) {
           const updated = [...prev];
-          const matchedUser = updated[existingIdx];
-          updated[existingIdx] = {
+          const matchedUser = updated[foundIdx];
+          updated[foundIdx] = {
             ...matchedUser,
             role: 'vendor',
             vendorStoreId: storeId,
           };
+          // Sync role upgrade to Supabase profiles table
           if (isSupabaseConfigured) {
             SupabaseService.updateUserProfile(matchedUser.id, { role: 'vendor', vendor_store_id: storeId });
           }
+          // If this is the currently logged-in user, update their session too
+          if (currentUser?.id === matchedUser.id) {
+            setCurrentUser((prev) => prev ? { ...prev, role: 'vendor', vendorStoreId: storeId } : null);
+            setRole('vendor');
+            setActiveVendorStoreId(storeId);
+          }
           return updated;
         } else {
+          // User not found in local array — create a placeholder vendor account
           const newVendorUser: UserAccount = {
-            id: `user-vendor-${Date.now()}`,
+            id: vendorUserId || `user-vendor-${Date.now()}`,
             name: app.applicantName,
             email: app.email,
             phone: app.phone,
@@ -787,6 +811,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             vendorStoreId: storeId,
             deliveryAddress: app.storeAddress,
           };
+          // Also try to update the profile in Supabase if we have a valid UUID
+          if (isSupabaseConfigured && vendorUserId) {
+            SupabaseService.updateUserProfile(vendorUserId, { role: 'vendor', vendor_store_id: storeId });
+          }
           return [...prev, newVendorUser];
         }
       });
