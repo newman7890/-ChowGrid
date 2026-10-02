@@ -34,6 +34,7 @@ interface AppContextType {
   registerCustomer: (name: string, phone: string, email: string, address: string, password?: string, role?: UserRole) => Promise<{ success: boolean; message: string; user?: UserAccount }>;
   loginWithOAuth: (provider: 'google') => Promise<{ success: boolean; message: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+  resendConfirmationEmail: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
 
   activeVendorStoreId: string;
@@ -84,8 +85,6 @@ interface AppContextType {
   deleteFoodItem: (foodItemId: string) => void;
   verifyPickupOtp: (orderId: string, inputOtp: string) => { success: boolean; message: string };
   renewSubscription: (storeId: string) => void;
-  simulateGracePeriod: (storeId: string) => void;
-  simulateSubscriptionExpiry: (storeId: string) => void;
 
   // Admin actions
   reviewApplication: (appId: string, status: 'approved' | 'rejected' | 'suspended', rejectionReason?: string) => void;
@@ -93,98 +92,36 @@ interface AppContextType {
   verifyDeliveryOtp: (orderId: string, inputOtp: string) => { success: boolean; message: string };
   updateUserRole: (userId: string, newRole: UserRole) => void;
   deleteUserAccount: (userId: string) => void;
+  clearAllData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// One-time purge of legacy mock data stored in local storage
-const CLEAN_STORAGE_KEY = 'chowgrid_storage_v5_purged';
-if (typeof window !== 'undefined' && localStorage.getItem(CLEAN_STORAGE_KEY) !== 'true') {
-  [
-    'chowgrid_users',
-    'chowgrid_current_user',
-    'chowgrid_role',
-    'chowgrid_stores',
-    'chowgrid_foods',
-    'chowgrid_orders',
-    'chowgrid_apps',
-    'chowgrid_reviews',
-    'chowgrid_cart',
-    'chowgrid_favs',
-    'chowgrid_storage_v4_purged',
-  ].forEach((key) => localStorage.removeItem(key));
-  localStorage.setItem(CLEAN_STORAGE_KEY, 'true');
+// Ensure browser LocalStorage is completely wiped and never written to
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.clear();
+  } catch (e) {
+    // ignore
+  }
 }
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [users, setUsers] = useState<UserAccount[]>(() => {
-    const saved = localStorage.getItem('chowgrid_users');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    const saved = localStorage.getItem('chowgrid_current_user');
-    if (saved) {
-      try {
-        const parsed: UserAccount = JSON.parse(saved);
-        if (parsed.email?.toLowerCase() === 'newm5811@gmail.com') {
-          parsed.role = 'admin';
-          parsed.name = 'Newman (Administrator)';
-        }
-        return parsed;
-      } catch (e) {
-        return null;
-      }
-    }
-    return null;
-  });
-
-  const [role, setRole] = useState<UserRole>(() => {
-    const savedRole = localStorage.getItem('chowgrid_role') as UserRole;
-    return savedRole || 'customer';
-  });
-
+  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [role, setRole] = useState<UserRole>('customer');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-
   const [activeVendorStoreId, setActiveVendorStoreId] = useState<string>('store-1');
   const [activeTrackOrderId, setActiveTrackOrderId] = useState<string | null>(null);
+  const [stores, setStores] = useState<Store[]>(INITIAL_STORES);
+  const [foodItems, setFoodItems] = useState<FoodItem[]>(INITIAL_FOOD_ITEMS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [applications, setApplications] = useState<VendorApplication[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>([]);
 
-  const [stores, setStores] = useState<Store[]>(() => {
-    const saved = localStorage.getItem('chowgrid_stores');
-    return saved ? JSON.parse(saved) : INITIAL_STORES;
-  });
-
-  const [foodItems, setFoodItems] = useState<FoodItem[]>(() => {
-    const saved = localStorage.getItem('chowgrid_foods');
-    return saved ? JSON.parse(saved) : INITIAL_FOOD_ITEMS;
-  });
-
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('chowgrid_orders');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [applications, setApplications] = useState<VendorApplication[]>(() => {
-    const saved = localStorage.getItem('chowgrid_apps');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [reviews, setReviews] = useState<Review[]>(() => {
-    const saved = localStorage.getItem('chowgrid_reviews');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('chowgrid_cart');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const [favoriteStoreIds, setFavoriteStoreIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('chowgrid_favs');
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  // Automatically enforce admin role for newm5811@gmail.com
+  // Automatically enforce admin role for newm5811@gmail.com in memory
   useEffect(() => {
     if (currentUser?.email?.toLowerCase() === 'newm5811@gmail.com' && currentUser.role !== 'admin') {
       const updated: UserAccount = {
@@ -194,43 +131,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       };
       setCurrentUser(updated);
       setRole('admin');
-      localStorage.setItem('chowgrid_current_user', JSON.stringify(updated));
-      localStorage.setItem('chowgrid_role', 'admin');
     }
   }, [currentUser]);
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('chowgrid_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_current_user', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_role', role);
-  }, [role]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_stores', JSON.stringify(stores));
-  }, [stores]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_foods', JSON.stringify(foodItems));
-  }, [foodItems]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_apps', JSON.stringify(applications));
-  }, [applications]);
-
-  useEffect(() => {
-    localStorage.setItem('chowgrid_cart', JSON.stringify(cart));
-  }, [cart]);
 
   // Load initial data from Supabase & Hydrate Session if configured
   useEffect(() => {
@@ -238,17 +140,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const loadSupabaseData = async () => {
       try {
-        const [dbStores, dbFoods, dbOrders] = await Promise.all([
+        const [dbStores, dbFoods, dbOrders, dbApps, dbUsers] = await Promise.all([
           SupabaseService.getStores(),
           SupabaseService.getFoodItems(),
           SupabaseService.getOrders(),
+          SupabaseService.getApplications(),
+          SupabaseService.getUsers(),
         ]);
 
-        if (dbStores && dbStores.length > 0) setStores(dbStores);
-        if (dbFoods && dbFoods.length > 0) setFoodItems(dbFoods);
-        if (dbOrders && dbOrders.length > 0) setOrders(dbOrders);
+        if (dbStores !== null) setStores(dbStores);
+        if (dbFoods !== null) setFoodItems(dbFoods);
+        if (dbOrders !== null) setOrders(dbOrders);
+        if (dbApps !== null) setApplications(dbApps);
+        if (dbUsers !== null) setUsers(dbUsers);
       } catch (err) {
-        console.warn('Using local dataset as Supabase fallback:', err);
+        console.warn('Error fetching Supabase tables:', err);
       }
     };
 
@@ -344,8 +250,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const clean = identifier.trim();
     const isAdminEmail = clean.toLowerCase() === 'newm5811@gmail.com';
 
-    // 1. Try real Supabase Auth if it's an email and Supabase is configured
-    if (isSupabaseConfigured && clean.includes('@') && password) {
+    // 1. Authenticate with live Supabase database
+    if (isSupabaseConfigured) {
+      if (!password) {
+        return { success: false, message: 'Password is required to sign in.' };
+      }
+
       const res = await SupabaseService.signIn(clean, password);
       if (res.user) {
         const profile = await SupabaseService.getUserProfile(res.user.id);
@@ -365,9 +275,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginAsUser(userAcc);
         return { success: true, message: `Welcome back, ${userAcc.name}!` };
       }
+
+      return {
+        success: false,
+        message: res.error || 'Invalid credentials. Account does not exist in the database.',
+      };
     }
 
-    // 2. Demo Persona & Local Mock User Match (works instantly for testing & offline)
+    // 2. Offline / local session fallback: Match explicitly registered user
     const lower = clean.toLowerCase();
     const found = users.find(
       (u) =>
@@ -380,39 +295,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true, message: `Welcome back, ${accountToLogin.name}!` };
     }
 
-    // If newm5811@gmail.com logs in without prior registration, auto-create as admin
-    if (isAdminEmail) {
-      const adminUser: UserAccount = {
-        id: `admin-${Date.now()}`,
-        name: 'Newman (Administrator)',
-        email: 'newm5811@gmail.com',
-        phone: '+233 24 000 5811',
-        role: 'admin',
-        deliveryAddress: 'Accra, Ghana',
-      };
-      setUsers((prev) => [...prev, adminUser]);
-      loginAsUser(adminUser);
-      return { success: true, message: `Admin access granted! Welcome, ${adminUser.name}!` };
-    }
-
-    // 3. Fallback Auto-Registration for quick customer sign-in
-    if (targetRole === 'customer') {
-      const newUser: UserAccount = {
-        id: `user-${Date.now()}`,
-        name: clean.includes('@') ? clean.split('@')[0] : 'Valued Customer',
-        email: clean.includes('@') ? clean : `${clean.replace(/[^a-zA-Z0-9]/g, '')}@customer.gh`,
-        phone: clean.includes('@') ? '+233 24 000 0000' : clean,
-        role: 'customer',
-        deliveryAddress: 'Accra, Ghana',
-      };
-      setUsers((prev) => [...prev, newUser]);
-      loginAsUser(newUser);
-      return { success: true, message: `Account ready! Welcome, ${newUser.name}!` };
-    }
-
+    // If not found in database or registered accounts, reject sign in
     return {
       success: false,
-      message: `No ${targetRole} account found for "${clean}". Please verify your credentials.`,
+      message: `No account found for "${clean}". Please register / sign up first.`,
     };
   };
 
@@ -471,19 +357,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithOAuth = async (provider: 'google'): Promise<{ success: boolean; message: string }> => {
     if (!isSupabaseConfigured) {
-      // Demo Google Auth
-      const demoGoogleUser: UserAccount = {
-        id: `google-${Date.now()}`,
-        name: 'Google Customer',
-        email: 'customer@gmail.com',
-        phone: '+233 24 555 1234',
-        role: 'customer',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-        deliveryAddress: 'Airport Residential Area, Accra',
-      };
-      setUsers((prev) => [...prev, demoGoogleUser]);
-      loginAsUser(demoGoogleUser);
-      return { success: true, message: 'Signed in with Google!' };
+      return { success: false, message: 'Google Sign-In is unavailable in offline mode. Please use Email/Phone to sign in.' };
     }
 
     const { error } = await SupabaseService.signInWithOAuth(provider);
@@ -502,7 +376,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: true, message: `Password reset link sent to ${email}!` };
     }
 
-    return { success: true, message: `Demo reset instructions sent to ${email}!` };
+    return { success: true, message: `Password reset instructions sent to ${email}!` };
+  };
+
+  const resendConfirmationEmail = async (email: string): Promise<{ success: boolean; message: string }> => {
+    if (!isSupabaseConfigured) {
+      return { success: false, message: 'Supabase is not configured.' };
+    }
+    const res = await SupabaseService.resendConfirmationEmail(email.trim());
+    if (res.error) {
+      return { success: false, message: res.error };
+    }
+    return { success: true, message: `Confirmation link has been resent to ${email}. Please check your inbox and spam folder.` };
   };
 
   const logout = async () => {
@@ -710,9 +595,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleFoodAvailability = (foodItemId: string) => {
+    let nextAvailable = true;
     setFoodItems((prev) =>
-      prev.map((f) => (f.id === foodItemId ? { ...f, isAvailable: !f.isAvailable } : f))
+      prev.map((f) => {
+        if (f.id === foodItemId) {
+          nextAvailable = !f.isAvailable;
+          return { ...f, isAvailable: nextAvailable };
+        }
+        return f;
+      })
     );
+    if (isSupabaseConfigured) {
+      SupabaseService.toggleFoodAvailability(foodItemId, nextAvailable);
+    }
   };
 
   const saveFoodItem = (item: FoodItem) => {
@@ -725,10 +620,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       return [item, ...prev];
     });
+    if (isSupabaseConfigured) {
+      SupabaseService.saveFoodItem(item);
+    }
   };
 
   const deleteFoodItem = (foodItemId: string) => {
     setFoodItems((prev) => prev.filter((f) => f.id !== foodItemId));
+    if (isSupabaseConfigured) {
+      SupabaseService.deleteFoodItem(foodItemId);
+    }
   };
 
   const verifyPickupOtp = (orderId: string, inputOtp: string) => {
@@ -752,11 +653,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const renewSubscription = (storeId: string) => {
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const grace = new Date(Date.now() + 37 * 24 * 60 * 60 * 1000).toISOString();
+
     setStores((prev) =>
       prev.map((s) => {
         if (s.id === storeId) {
-          const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-          const grace = new Date(Date.now() + 37 * 24 * 60 * 60 * 1000).toISOString();
           return {
             ...s,
             subscriptionStatus: 'active',
@@ -767,39 +669,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return s;
       })
     );
-  };
 
-  const simulateGracePeriod = (storeId: string) => {
-    setStores((prev) =>
-      prev.map((s) => {
-        if (s.id === storeId) {
-          return {
-            ...s,
-            subscriptionStatus: 'grace_period',
-            subscriptionExpiresAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-            gracePeriodEndsAt: new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString(),
-          };
-        }
-        return s;
-      })
-    );
-  };
-
-  const simulateSubscriptionExpiry = (storeId: string) => {
-    setStores((prev) =>
-      prev.map((s) => {
-        if (s.id === storeId) {
-          return {
-            ...s,
-            subscriptionStatus: 'suspended',
-            isOpen: false,
-            subscriptionExpiresAt: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(),
-            gracePeriodEndsAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-          };
-        }
-        return s;
-      })
-    );
+    if (isSupabaseConfigured) {
+      SupabaseService.updateStore(storeId, {
+        subscriptionStatus: 'active',
+        subscriptionExpiresAt: expires,
+        gracePeriodEndsAt: grace,
+      });
+    }
   };
 
   const submitVendorApplication = (
@@ -836,6 +713,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((a) => (a.id === appId ? { ...a, status, notes: rejectionReason || a.notes } : a))
     );
 
+    if (isSupabaseConfigured) {
+      SupabaseService.updateApplicationStatus(appId, status, rejectionReason);
+    }
+
     // 2. If approved, automatically create a new active Store in the marketplace
     if (status === 'approved') {
       const storeId = `store-${Date.now()}`;
@@ -864,6 +745,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setStores((prev) => [newStore, ...prev]);
 
+      if (isSupabaseConfigured) {
+        SupabaseService.createStore(newStore);
+      }
+
       // 3. Promote or create the vendor user account
       setUsers((prev) => {
         const existingIdx = prev.findIndex(
@@ -871,11 +756,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         );
         if (existingIdx >= 0) {
           const updated = [...prev];
+          const matchedUser = updated[existingIdx];
           updated[existingIdx] = {
-            ...updated[existingIdx],
+            ...matchedUser,
             role: 'vendor',
             vendorStoreId: storeId,
           };
+          if (isSupabaseConfigured) {
+            SupabaseService.updateUserProfile(matchedUser.id, { role: 'vendor', vendor_store_id: storeId });
+          }
           return updated;
         } else {
           const newVendorUser: UserAccount = {
@@ -901,6 +790,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUser((prev) => (prev ? { ...prev, role: newRole } : null));
       setRole(newRole);
     }
+    if (isSupabaseConfigured) {
+      SupabaseService.updateUserProfile(userId, { role: newRole });
+    }
   };
 
   const deleteUserAccount = (userId: string) => {
@@ -908,22 +800,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (currentUser?.id === userId) {
       logout();
     }
+    if (isSupabaseConfigured) {
+      SupabaseService.deleteUserProfile(userId);
+    }
   };
 
   const toggleStoreLock = (storeId: string) => {
+    let nextStatus: 'active' | 'grace_period' | 'suspended' = 'suspended';
+    let nextOpen = false;
     setStores((prev) =>
       prev.map((s) => {
         if (s.id === storeId) {
-          const newStatus = s.subscriptionStatus === 'suspended' ? 'active' : 'suspended';
+          nextStatus = s.subscriptionStatus === 'suspended' ? 'active' : 'suspended';
+          nextOpen = nextStatus === 'active';
           return {
             ...s,
-            subscriptionStatus: newStatus,
-            isOpen: newStatus === 'active',
+            subscriptionStatus: nextStatus,
+            isOpen: nextOpen,
           };
         }
         return s;
       })
     );
+    if (isSupabaseConfigured) {
+      SupabaseService.updateStore(storeId, {
+        subscriptionStatus: nextStatus,
+        isOpen: nextOpen,
+      });
+    }
+  };
+
+  const clearAllData = async () => {
+    // 1. Wipe local state
+    setStores([]);
+    setFoodItems([]);
+    setOrders([]);
+    setApplications([]);
+    setReviews([]);
+    setCart([]);
+    setFavoriteStoreIds([]);
+    setUsers([]);
+    setCurrentUser(null);
+    setRole('customer');
+
+    // 2. Wipe browser localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.clear();
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 3. Wipe Supabase backend tables
+    await SupabaseService.deleteAllRecords();
   };
 
   return (
@@ -940,6 +870,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         registerCustomer,
         loginWithOAuth,
         resetPassword,
+        resendConfirmationEmail,
         logout,
         activeVendorStoreId,
         setActiveVendorStoreId,
@@ -973,12 +904,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verifyPickupOtp,
         verifyDeliveryOtp,
         renewSubscription,
-        simulateGracePeriod,
-        simulateSubscriptionExpiry,
         reviewApplication,
         toggleStoreLock,
         updateUserRole,
         deleteUserAccount,
+        clearAllData,
       }}
     >
       {children}

@@ -294,19 +294,73 @@ export const SupabaseService = {
     return true;
   },
 
+  // 7b. Fetch all Vendor Applications
+  async getApplications(): Promise<VendorApplication[] | null> {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const { data, error } = await supabase
+      .from('vendor_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching applications from Supabase:', error);
+      return null;
+    }
+
+    return data.map((a: any) => ({
+      id: a.id,
+      applicantName: a.contact_person,
+      businessName: a.kitchen_name,
+      phone: a.phone,
+      email: a.email,
+      storeAddress: a.address,
+      ghanaCardNumber: a.ghana_card_number,
+      foodType: a.sample_menu || 'Local Ghanaian',
+      notes: a.description || '',
+      status: a.status || 'pending',
+      appliedAt: a.created_at,
+    }));
+  },
+
+  // 7c. Update Vendor Application Status
+  async updateApplicationStatus(appId: string, status: string, notes?: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    const { error } = await supabase
+      .from('vendor_applications')
+      .update({
+        status,
+        description: notes || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', appId);
+
+    if (error) {
+      console.error('Error updating vendor application in Supabase:', error);
+      return false;
+    }
+
+    return true;
+  },
+
   // 8. Update Store Settings
   async updateStore(storeId: string, updates: Partial<Store>): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) return false;
 
+    const payload: any = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.prepTimeEstimate !== undefined) payload.prep_time = updates.prepTimeEstimate;
+    if (updates.address !== undefined) payload.address = updates.address;
+    if (updates.isOpen !== undefined) payload.is_open = updates.isOpen;
+    if (updates.subscriptionStatus !== undefined) payload.subscription_status = updates.subscriptionStatus;
+    if (updates.subscriptionExpiresAt !== undefined) payload.subscription_renews_at = updates.subscriptionExpiresAt;
+
     const { error } = await supabase
       .from('stores')
-      .update({
-        name: updates.name,
-        prep_time: updates.prepTimeEstimate,
-        address: updates.address,
-        is_open: updates.isOpen,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payload)
       .eq('id', storeId);
 
     if (error) {
@@ -317,9 +371,155 @@ export const SupabaseService = {
     return true;
   },
 
+  // 8b. Create New Store
+  async createStore(store: Store): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    const slug = store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now().toString(36);
+
+    const { error } = await supabase.from('stores').insert({
+      id: store.id,
+      vendor_id: store.vendorId || null,
+      name: store.name,
+      slug: slug,
+      description: store.tagline,
+      logo_url: store.logoUrl,
+      cover_url: store.coverUrl,
+      rating: store.rating || 5.0,
+      total_reviews: store.reviewCount || 0,
+      prep_time: store.prepTimeEstimate || '20-30 min',
+      is_open: store.isOpen,
+      address: store.address,
+      category: store.category,
+      monthly_fee: store.monthlyFee || 150,
+      subscription_status: store.subscriptionStatus || 'active',
+      subscription_renews_at: store.subscriptionExpiresAt,
+      momo_payout_number: store.phone,
+    });
+
+    if (error) {
+      console.error('Error creating store in Supabase:', error);
+      return false;
+    }
+
+    return true;
+  },
+
+  // 8c. Save / Upsert Food Item
+  async saveFoodItem(item: FoodItem): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    try {
+      const { error: itemError } = await supabase.from('food_items').upsert({
+        id: item.id,
+        store_id: item.storeId,
+        name: item.name,
+        description: item.description,
+        base_price: item.basePrice,
+        image_url: item.imageUrl,
+        category: item.category,
+        type: item.type === 'build_your_meal' ? 'build_your_meal' : 'fixed_dish',
+        prep_time_minutes: item.prepTimeMinutes || 20,
+        is_available: item.isAvailable,
+        updated_at: new Date().toISOString(),
+      });
+
+      if (itemError) throw itemError;
+
+      // If modifier groups exist, sync them
+      if (item.modifierGroups && item.modifierGroups.length > 0) {
+        for (const grp of item.modifierGroups) {
+          const { error: grpError } = await supabase.from('modifier_groups').upsert({
+            id: grp.id,
+            food_item_id: item.id,
+            name: grp.name,
+            min_selection: grp.minSelection,
+            max_selection: grp.maxSelection,
+            required: grp.required,
+            allow_quantity_multiplier: grp.allowQuantityMultiplier,
+          });
+
+          if (grpError) throw grpError;
+
+          if (grp.options && grp.options.length > 0) {
+            for (const opt of grp.options) {
+              const { error: optError } = await supabase.from('modifier_options').upsert({
+                id: opt.id,
+                modifier_group_id: grp.id,
+                name: opt.name,
+                price: opt.price,
+                is_default: opt.isDefault,
+              });
+              if (optError) throw optError;
+            }
+          }
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error saving food item to Supabase:', err);
+      return false;
+    }
+  },
+
+  // 8d. Delete Food Item
+  async deleteFoodItem(foodItemId: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    const { error } = await supabase.from('food_items').delete().eq('id', foodItemId);
+    if (error) {
+      console.error('Error deleting food item from Supabase:', error);
+      return false;
+    }
+    return true;
+  },
+
+  // 8e. Toggle Food Availability
+  async toggleFoodAvailability(foodItemId: string, isAvailable: boolean): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    const { error } = await supabase
+      .from('food_items')
+      .update({ is_available: isAvailable, updated_at: new Date().toISOString() })
+      .eq('id', foodItemId);
+
+    if (error) {
+      console.error('Error updating food availability:', error);
+      return false;
+    }
+    return true;
+  },
+
   // ============================================================================
   // 9. Supabase Auth & Profile Methods
   // ============================================================================
+
+  // Fetch all User Profiles
+  async getUsers() {
+    if (!isSupabaseConfigured || !supabase) return null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching profiles from Supabase:', error);
+      return null;
+    }
+
+    return data.map((p: any) => ({
+      id: p.id,
+      name: p.full_name || 'Member',
+      email: p.email || '',
+      phone: p.phone || '',
+      role: p.role,
+      avatarUrl: p.avatar_url,
+      deliveryAddress: p.delivery_address || '',
+      vendorStoreId: p.vendor_store_id,
+    }));
+  },
 
   // Sign Up with Email & Password
   async signUp(email: string, password: string, metadata: { fullName: string; phone: string; role: 'customer' | 'vendor' | 'admin'; address?: string }) {
@@ -350,6 +550,7 @@ export const SupabaseService = {
             phone: metadata.phone,
             email: email,
             role: metadata.role,
+            delivery_address: metadata.address,
             updated_at: new Date().toISOString(),
           });
         } catch (e) {
@@ -409,6 +610,23 @@ export const SupabaseService = {
     }
   },
 
+  // Resend Confirmation Email
+  async resendConfirmationEmail(email: string) {
+    if (!isSupabaseConfigured || !supabase) return { success: false, error: 'Supabase is not configured' };
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+      });
+
+      if (error) return { success: false, error: error.message };
+      return { success: true, error: null };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to resend confirmation email' };
+    }
+  },
+
   // Reset Password via Email
   async resetPasswordForEmail(email: string) {
     if (!isSupabaseConfigured || !supabase) return { success: false, error: 'Supabase is not configured' };
@@ -449,7 +667,7 @@ export const SupabaseService = {
   },
 
   // Update User Profile
-  async updateUserProfile(userId: string, updates: { full_name?: string; phone?: string; avatar_url?: string }) {
+  async updateUserProfile(userId: string, updates: { full_name?: string; phone?: string; avatar_url?: string; role?: string; vendor_store_id?: string }) {
     if (!isSupabaseConfigured || !supabase) return false;
 
     try {
@@ -463,6 +681,46 @@ export const SupabaseService = {
     } catch (err) {
       console.error('Failed to update profile in Supabase:', err);
       return false;
+    }
+  },
+
+  // Delete User Profile
+  async deleteUserProfile(userId: string) {
+    if (!isSupabaseConfigured || !supabase) return false;
+
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', userId);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('Failed to delete user profile in Supabase:', err);
+      return false;
+    }
+  },
+
+  // 14. Purge all records from all database tables
+  async deleteAllRecords(): Promise<{ success: boolean; message: string }> {
+    if (!isSupabaseConfigured || !supabase) {
+      return { success: true, message: 'Local storage wiped. Supabase is not connected.' };
+    }
+
+    try {
+      // Delete child tables first to avoid foreign key conflicts
+      await supabase.from('order_item_modifiers').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('reviews').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('modifier_options').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('modifier_groups').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('food_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('vendor_applications').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('stores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      return { success: true, message: 'All database records successfully deleted from Supabase.' };
+    } catch (err: any) {
+      console.error('Error deleting records from Supabase:', err);
+      return { success: false, message: err.message || 'Failed to delete some records from Supabase.' };
     }
   },
 };

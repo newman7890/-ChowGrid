@@ -42,8 +42,6 @@ export const AdminDashboard: React.FC = () => {
     updateUserRole,
     deleteUserAccount,
     renewSubscription,
-    simulateGracePeriod,
-    simulateSubscriptionExpiry,
   } = useApp();
 
   // Tab State
@@ -611,15 +609,9 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => renewSubscription(store.id)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 font-bold rounded-lg transition cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 font-bold rounded-lg transition cursor-pointer"
                     >
-                      Extend +30 Days
-                    </button>
-                    <button
-                      onClick={() => simulateGracePeriod(store.id)}
-                      className="px-2.5 py-1 bg-slate-100 hover:bg-amber-50 hover:text-amber-800 text-slate-700 font-bold rounded-lg transition cursor-pointer"
-                    >
-                      Trigger Grace
+                      Extend Subscription (+30 Days)
                     </button>
                   </div>
 

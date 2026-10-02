@@ -8,7 +8,6 @@ import { CheckoutModal } from './components/CheckoutModal';
 import { OrderTrackingModal } from './components/OrderTrackingModal';
 import { VendorDashboard } from './components/VendorDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
-import { RiderSandboxModal } from './components/RiderSandboxModal';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
 import { FoodItem } from './types';
@@ -23,7 +22,6 @@ const MainAppContent: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isOrderTrackerOpen, setIsOrderTrackerOpen] = useState(false);
-  const [isRiderSandboxOpen, setIsRiderSandboxOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
@@ -34,7 +32,6 @@ const MainAppContent: React.FC = () => {
         setSearchTerm={setSearchTerm}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenOrderTracker={() => setIsOrderTrackerOpen(true)}
-        onOpenRiderSandbox={() => setIsRiderSandboxOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
@@ -103,11 +100,6 @@ const MainAppContent: React.FC = () => {
       <OrderTrackingModal
         isOpen={isOrderTrackerOpen}
         onClose={() => setIsOrderTrackerOpen(false)}
-      />
-
-      <RiderSandboxModal
-        isOpen={isRiderSandboxOpen}
-        onClose={() => setIsRiderSandboxOpen(false)}
       />
 
       <SettingsModal

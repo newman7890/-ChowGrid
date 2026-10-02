@@ -21,15 +21,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onOrderSuccess,
 }) => {
-  const { cart, cartSubtotal, cartDeliveryFee, cartTotal, placeOrder } = useApp();
+  const { cart, cartSubtotal, cartDeliveryFee, cartTotal, placeOrder, currentUser } = useApp();
 
-  const [customerName, setCustomerName] = useState('Kwame Mensah');
-  const [customerPhone, setCustomerPhone] = useState('+233 24 991 2233');
-  const [deliveryAddress, setDeliveryAddress] = useState('House 14, East Legon Hills, Accra');
-  const [customerNotes, setCustomerNotes] = useState('Call me when rider reaches the gate.');
+  const [customerName, setCustomerName] = useState(currentUser?.name || '');
+  const [customerPhone, setCustomerPhone] = useState(currentUser?.phone || '');
+  const [deliveryAddress, setDeliveryAddress] = useState(currentUser?.deliveryAddress || '');
+  const [customerNotes, setCustomerNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<
     'momo_mtn' | 'momo_telecel' | 'card' | 'cash_on_delivery'
   >('momo_mtn');
+
+  // Sync if currentUser changes
+  React.useEffect(() => {
+    if (currentUser) {
+      if (!customerName) setCustomerName(currentUser.name || '');
+      if (!customerPhone) setCustomerPhone(currentUser.phone || '');
+      if (!deliveryAddress) setDeliveryAddress(currentUser.deliveryAddress || '');
+    }
+  }, [currentUser]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -114,6 +123,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <input
                   type="text"
                   required
+                  placeholder="Enter your full name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-orange-500"
@@ -125,6 +135,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <input
                   type="text"
                   required
+                  placeholder="e.g. +233 24 000 0000"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:bg-white focus:border-orange-500"

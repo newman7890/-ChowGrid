@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Plus,
   ChevronRight,
+  Store as StoreIcon,
 } from 'lucide-react';
 
 interface CustomerMarketplaceProps {
@@ -210,143 +211,155 @@ export const CustomerMarketplace: React.FC<CustomerMarketplaceProps> = ({
             <p className="text-xs text-slate-500">Authentic independent kitchens with direct delivery</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayStores.map((store) => {
-              const isFav = favoriteStoreIds.includes(store.id);
-              const storeDishesCount = foodItems.filter((f) => f.storeId === store.id).length;
+          {displayStores.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto">
+                <StoreIcon className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-slate-800 font-['Outfit']">No stores available right now</h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                No active kitchen stores found matching your search. Apply as a vendor to launch your food kitchen on ChowGrid!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayStores.map((store) => {
+                const isFav = favoriteStoreIds.includes(store.id);
+                const storeDishesCount = foodItems.filter((f) => f.storeId === store.id).length;
 
-              return (
-                <div
-                  key={store.id}
-                  className="group bg-white rounded-3xl border border-slate-200/80 hover:border-orange-300 hover:shadow-lg transition-all duration-300 overflow-hidden shadow-xs flex flex-col justify-between"
-                >
-                  {/* Top Cover */}
-                  <div className="relative h-44 w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={store.coverUrl}
-                      alt={store.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
-
-                    {/* Status & Timing */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs ${
-                          store.isOpen
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-800 text-white'
-                        }`}
-                      >
-                        {store.isOpen ? 'Open Now' : 'Closed'}
-                      </span>
-                    </div>
-
-                    {/* Action buttons (Fav, Share, QR) */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCopyLink(store);
-                        }}
-                        title="Copy Store Link"
-                        className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition shadow-sm relative"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        {copiedLinkStoreId === store.id && (
-                          <span className="absolute -bottom-8 right-0 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
-                            Link Copied!
-                          </span>
-                        )}
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setQrModalStore(store);
-                        }}
-                        title="Store QR Code"
-                        className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition shadow-sm"
-                      >
-                        <QrCode className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleFavorite(store.id);
-                        }}
-                        className={`p-2 rounded-full transition shadow-sm ${
-                          isFav
-                            ? 'bg-rose-500 text-white'
-                            : 'bg-white/90 hover:bg-white text-slate-600'
-                        }`}
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
-                      </button>
-                    </div>
-
-                    {/* Logo */}
-                    <div className="absolute -bottom-3 left-4 flex items-end gap-3">
+                return (
+                  <div
+                    key={store.id}
+                    className="group bg-white rounded-3xl border border-slate-200/80 hover:border-orange-300 hover:shadow-lg transition-all duration-300 overflow-hidden shadow-xs flex flex-col justify-between"
+                  >
+                    {/* Top Cover */}
+                    <div className="relative h-44 w-full overflow-hidden bg-slate-100">
                       <img
-                        src={store.logoUrl}
+                        src={store.coverUrl}
                         alt={store.name}
-                        className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-white"
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                       />
-                    </div>
-                  </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
 
-                  {/* Body Info */}
-                  <div className="p-5 pt-6 space-y-3 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-bold text-slate-900 text-base group-hover:text-orange-600 transition font-['Outfit']">
-                          {store.name}
-                        </h3>
-                        <div className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                          <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
-                          <span>{store.rating}</span>
-                          <span className="text-[10px] text-slate-500">({store.reviewCount})</span>
+                      {/* Status & Timing */}
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-xs ${
+                            store.isOpen
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-slate-800 text-white'
+                          }`}
+                        >
+                          {store.isOpen ? 'Open Now' : 'Closed'}
+                        </span>
+                      </div>
+
+                      {/* Action buttons (Fav, Share, QR) */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCopyLink(store);
+                          }}
+                          title="Copy Store Link"
+                          className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition shadow-sm relative"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          {copiedLinkStoreId === store.id && (
+                            <span className="absolute -bottom-8 right-0 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+                              Link Copied!
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setQrModalStore(store);
+                          }}
+                          title="Store QR Code"
+                          className="p-2 bg-white/90 hover:bg-white text-slate-700 rounded-full transition shadow-sm"
+                        >
+                          <QrCode className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFavorite(store.id);
+                          }}
+                          className={`p-2 rounded-full transition shadow-sm ${
+                            isFav
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-white/90 hover:bg-white text-slate-600'
+                          }`}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+
+                      {/* Logo */}
+                      <div className="absolute -bottom-3 left-4 flex items-end gap-3">
+                        <img
+                          src={store.logoUrl}
+                          alt={store.name}
+                          className="w-14 h-14 rounded-2xl object-cover border-2 border-white shadow-md bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Body Info */}
+                    <div className="p-5 pt-6 space-y-3 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-bold text-slate-900 text-base group-hover:text-orange-600 transition font-['Outfit']">
+                            {store.name}
+                          </h3>
+                          <div className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
+                            <span>{store.rating}</span>
+                            <span className="text-[10px] text-slate-500">({store.reviewCount})</span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{store.tagline}</p>
+                      </div>
+
+                      <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="truncate max-w-[170px]">{store.address}</span>
+                          </span>
+                          <span className="flex items-center gap-1 text-slate-700 font-medium">
+                            <Clock className="w-3.5 h-3.5 text-orange-500" />
+                            {store.prepTimeEstimate}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-[11px] bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-medium">
+                            {store.category}
+                          </span>
+                          <span className="text-[11px] text-slate-600 font-medium">
+                            {storeDishesCount} dishes
+                          </span>
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-2">{store.tagline}</p>
+                      <button
+                        onClick={() => setSelectedStoreFilter(store.id)}
+                        className="w-full mt-3 py-2.5 bg-slate-100 hover:bg-orange-600 hover:text-white text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
+                      >
+                        <span>View Menu</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-
-                    <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                          <span className="truncate max-w-[170px]">{store.address}</span>
-                        </span>
-                        <span className="flex items-center gap-1 text-slate-700 font-medium">
-                          <Clock className="w-3.5 h-3.5 text-orange-500" />
-                          {store.prepTimeEstimate}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <span className="text-[11px] bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-md font-medium">
-                          {store.category}
-                        </span>
-                        <span className="text-[11px] text-slate-600 font-medium">
-                          {storeDishesCount} dishes
-                        </span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setSelectedStoreFilter(store.id)}
-                      className="w-full mt-3 py-2.5 bg-slate-100 hover:bg-orange-600 hover:text-white text-slate-800 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2"
-                    >
-                      <span>View Menu</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       )}
 

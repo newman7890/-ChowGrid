@@ -49,38 +49,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [mobileScreen, setMobileScreen] = useState<'menu' | 'detail'>('menu');
 
   // Customer Profile State
-  const [name, setName] = useState(currentUser?.name || 'Kwame Mensah');
-  const [email, setEmail] = useState(currentUser?.email || 'kwame.mensah@gmail.com');
-  const [phone, setPhone] = useState(currentUser?.phone || '+233 24 991 2233');
+  const [name, setName] = useState(currentUser?.name || '');
+  const [email, setEmail] = useState(currentUser?.email || '');
+  const [phone, setPhone] = useState(currentUser?.phone || '');
 
   // Seller Application Form State
   const [appBusinessName, setAppBusinessName] = useState('');
   const [appCategory, setAppCategory] = useState('Waakye & Local Dishes');
   const [appAddress, setAppAddress] = useState('');
   const [appGhanaCard, setAppGhanaCard] = useState('');
-  const [appPhone, setAppPhone] = useState(currentUser?.phone || '+233 ');
+  const [appPhone, setAppPhone] = useState(currentUser?.phone || '');
   const [appEmail, setAppEmail] = useState(currentUser?.email || '');
   const [appApplicantName, setAppApplicantName] = useState(currentUser?.name || '');
-  const [appMomoPayout, setAppMomoPayout] = useState('+233 ');
+  const [appMomoPayout, setAppMomoPayout] = useState('');
   const [appSubmitted, setAppSubmitted] = useState(false);
 
   // Saved Addresses State
   const [addresses, setAddresses] = useState<
     { id: string; label: string; address: string; isDefault: boolean }[]
-  >([
-    {
-      id: 'addr-1',
-      label: 'Home',
-      address: 'House 14, East Legon Hills, Accra (Near Shell)',
-      isDefault: true,
-    },
-    {
-      id: 'addr-2',
-      label: 'Work / Office',
-      address: 'Silver Star Tower, Airport City, 4th Floor',
-      isDefault: false,
-    },
-  ]);
+  >(() => {
+    if (currentUser?.deliveryAddress) {
+      return [{
+        id: 'addr-1',
+        label: 'Home',
+        address: currentUser.deliveryAddress,
+        isDefault: true,
+      }];
+    }
+    return [];
+  });
   const [newAddrLabel, setNewAddrLabel] = useState('Other');
   const [newAddrText, setNewAddrText] = useState('');
   const [showAddAddress, setShowAddAddress] = useState(false);
@@ -91,14 +88,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [promoEmails, setPromoEmails] = useState(false);
 
   // Vendor Store Settings State
-  const currentStore = stores.find((s) => s.id === activeVendorStoreId) || stores[0];
-  const [storeName, setStoreName] = useState(currentStore.name);
-  const [storeTagline, setStoreTagline] = useState(currentStore.tagline);
-  const [storePhone, setStorePhone] = useState(currentStore.phone);
-  const [storeAddress, setStoreAddress] = useState(currentStore.address);
-  const [prepTime, setPrepTime] = useState(currentStore.prepTimeEstimate);
-  const [openingHours, setOpeningHours] = useState(currentStore.scheduledHours);
-  const [payoutMomo, setPayoutMomo] = useState('+233 24 123 4567');
+  const currentStore = stores.find((s) => s.id === activeVendorStoreId || s.id === currentUser?.vendorStoreId);
+  const [storeName, setStoreName] = useState(currentStore?.name || '');
+  const [storeTagline, setStoreTagline] = useState(currentStore?.tagline || '');
+  const [storePhone, setStorePhone] = useState(currentStore?.phone || '');
+  const [storeAddress, setStoreAddress] = useState(currentStore?.address || '');
+  const [prepTime, setPrepTime] = useState(currentStore?.prepTimeEstimate || '20-30 min');
+  const [openingHours, setOpeningHours] = useState(currentStore?.scheduledHours || '8:00 AM - 10:00 PM');
+  const [payoutMomo, setPayoutMomo] = useState(currentStore?.phone || '');
 
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -663,35 +660,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <p className="text-xs text-slate-500">Configure your default Mobile Money wallet or card</p>
 
                 <div className="space-y-3">
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-yellow-400 text-slate-950 font-bold text-xs flex items-center justify-center">
-                        MTN
+                  {currentUser?.phone ? (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-yellow-400 text-slate-950 font-bold text-xs flex items-center justify-center">
+                          MTN
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900 text-xs">Mobile Money Wallet</span>
+                          <p className="text-xs text-slate-500">{currentUser.phone} • {currentUser.name}</p>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-bold text-slate-900 text-xs">MTN Mobile Money Wallet</span>
-                        <p className="text-xs text-slate-500">+233 24 991 2233 • Kwame Mensah</p>
-                      </div>
+                      <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
+                        Active
+                      </span>
                     </div>
-                    <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
-                      Primary
-                    </span>
-                  </div>
-
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
-                        VISA
-                      </div>
-                      <div>
-                        <span className="font-bold text-slate-900 text-xs">Debit Card</span>
-                        <p className="text-xs text-slate-500">•••• •••• •••• 4242 (Expires 08/28)</p>
-                      </div>
+                  ) : (
+                    <div className="p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center space-y-2">
+                      <CreditCard className="w-8 h-8 text-slate-300 mx-auto" />
+                      <h5 className="text-xs font-bold text-slate-700">No payment methods configured</h5>
+                      <p className="text-[11px] text-slate-500">
+                        Enter your MTN/Telecel Mobile Money number or card during checkout.
+                      </p>
                     </div>
-                    <button className="text-xs text-slate-500 hover:text-slate-800 font-medium">
-                      Manage
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
             )}

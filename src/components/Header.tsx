@@ -21,7 +21,6 @@ interface HeaderProps {
   onOpenOrderTracker: () => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  onOpenRiderSandbox: () => void;
   onOpenSettings: () => void;
 }
 

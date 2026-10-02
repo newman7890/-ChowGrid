@@ -36,8 +36,6 @@ export const VendorDashboard: React.FC = () => {
     deleteFoodItem,
     verifyPickupOtp,
     renewSubscription,
-    simulateGracePeriod,
-    simulateSubscriptionExpiry,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'orders' | 'menu' | 'subscription' | 'settings'>('orders');
@@ -51,8 +49,8 @@ export const VendorDashboard: React.FC = () => {
   const currentStore =
     stores.find((s) => s.id === currentUser?.vendorStoreId || s.id === activeVendorStoreId) ||
     stores[0];
-  const vendorOrders = orders.filter((o) => o.storeId === currentStore.id);
-  const vendorFoods = foodItems.filter((f) => f.storeId === currentStore.id);
+  const vendorOrders = currentStore ? orders.filter((o) => o.storeId === currentStore.id) : [];
+  const vendorFoods = currentStore ? foodItems.filter((f) => f.storeId === currentStore.id) : [];
 
   const activeOrders = vendorOrders.filter(
     (o) => o.status !== 'delivered' && o.status !== 'completed' && o.status !== 'cancelled'
@@ -318,6 +316,20 @@ export const VendorDashboard: React.FC = () => {
     setEditingFood(null);
   };
 
+  if (!currentStore) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 rounded-3xl bg-orange-50 text-orange-600 flex items-center justify-center mx-auto shadow-sm">
+          <ChefHat className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 font-['Outfit']">No Store Connected Yet</h2>
+        <p className="text-sm text-slate-500 max-w-md mx-auto">
+          You are in Vendor Hub, but no active food store is linked to this account yet. Submit your seller application or contact the platform administrator to activate your kitchen.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Store Header & Status Banner */}
@@ -423,23 +435,9 @@ export const VendorDashboard: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => renewSubscription(currentStore.id)}
-            className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
+            className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
           >
-            Renew Store (₵{currentStore.monthlyFee})
-          </button>
-
-          <button
-            onClick={() => simulateGracePeriod(currentStore.id)}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium"
-          >
-            Simulate Grace Period
-          </button>
-
-          <button
-            onClick={() => simulateSubscriptionExpiry(currentStore.id)}
-            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium"
-          >
-            Simulate Deactivation
+            Pay / Renew Subscription (₵{currentStore.monthlyFee}.00 via MoMo)
           </button>
         </div>
       </div>

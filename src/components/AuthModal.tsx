@@ -26,6 +26,7 @@ export const AuthModal: React.FC = () => {
     registerCustomer,
     loginWithOAuth,
     resetPassword,
+    resendConfirmationEmail,
   } = useApp();
 
   // Tab & Flow states
@@ -45,6 +46,7 @@ export const AuthModal: React.FC = () => {
 
   // UI status
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [feedback, setFeedback] = useState<{ success: boolean; text: string } | null>(null);
 
   if (!isAuthModalOpen) return null;
@@ -55,6 +57,23 @@ export const AuthModal: React.FC = () => {
     setIsForgotPassword(false);
     setIsVendorMode(false);
     setPassword('');
+  };
+
+  const handleResendEmail = async () => {
+    const targetEmail = identifier.includes('@') ? identifier.trim() : email.trim();
+    if (!targetEmail) {
+      setFeedback({ success: false, text: 'Please enter your email address to resend verification.' });
+      return;
+    }
+    setIsResending(true);
+    try {
+      const res = await resendConfirmationEmail(targetEmail);
+      setFeedback({ success: res.success, text: res.message });
+    } catch (err: any) {
+      setFeedback({ success: false, text: err.message || 'Failed to resend confirmation email.' });
+    } finally {
+      setIsResending(false);
+    }
   };
 
   // Sign In submit
@@ -253,18 +272,35 @@ export const AuthModal: React.FC = () => {
           {/* Feedback Toast */}
           {feedback && (
             <div
-              className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2.5 transition-all ${
+              className={`p-3.5 rounded-2xl text-xs font-semibold flex flex-col gap-2 transition-all ${
                 feedback.success
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                   : 'bg-rose-50 text-rose-800 border border-rose-200'
               }`}
             >
-              {feedback.success ? (
-                <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-              ) : (
-                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+              <div className="flex items-center gap-2.5">
+                {feedback.success ? (
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+                )}
+                <span>{feedback.text}</span>
+              </div>
+              {!feedback.success && feedback.text.toLowerCase().includes('email not confirmed') && (
+                <div className="pt-2 border-t border-rose-200/60 flex items-center justify-between">
+                  <span className="text-[11px] text-rose-700 font-normal">
+                    Didn't receive verification email?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleResendEmail}
+                    disabled={isResending}
+                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-[11px] font-bold transition cursor-pointer disabled:opacity-60"
+                  >
+                    {isResending ? 'Resending...' : 'Resend Email Link'}
+                  </button>
+                </div>
               )}
-              <span>{feedback.text}</span>
             </div>
           )}
 
