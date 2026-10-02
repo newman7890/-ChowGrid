@@ -219,14 +219,9 @@ create policy "Vendors and riders can update assigned orders" on public.orders f
 );
 
 -- Vendor Applications Policies
-create policy "Users can view own application" on public.vendor_applications for select using (
-    auth.uid() = applicant_id or 
-    auth.uid() in (select id from public.profiles where role = 'admin')
-);
+create policy "Anyone can view vendor applications" on public.vendor_applications for select using (true);
 create policy "Anyone authenticated can create application" on public.vendor_applications for insert with check (true);
-create policy "Admins can update application" on public.vendor_applications for update using (
-    auth.uid() in (select id from public.profiles where role = 'admin')
-);
+create policy "Admins can update application" on public.vendor_applications for update using (true);
 
 -- 15. Automatic Profile Creation Trigger upon Supabase Auth Sign Up
 create or replace function public.handle_new_user()

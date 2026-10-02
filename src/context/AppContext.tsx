@@ -207,7 +207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // Subscribe to Realtime order notifications
-    const unsubscribe = SupabaseService.subscribeToOrders((updatedOrder) => {
+    const unsubscribeOrders = SupabaseService.subscribeToOrders((updatedOrder) => {
       setOrders((prev) => {
         const exists = prev.some((o) => o.id === updatedOrder.id);
         if (exists) {
@@ -217,9 +217,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     });
 
+    // Subscribe to Realtime vendor applications
+    const unsubscribeApps = SupabaseService.subscribeToApplications((updatedApp) => {
+      setApplications((prev) => {
+        const exists = prev.some((a) => a.id === updatedApp.id);
+        if (exists) {
+          return prev.map((a) => (a.id === updatedApp.id ? { ...a, ...updatedApp } : a));
+        }
+        return [updatedApp, ...prev];
+      });
+    });
+
     return () => {
       authListener?.subscription?.unsubscribe();
-      unsubscribe();
+      unsubscribeOrders();
+      unsubscribeApps();
     };
   }, []);
 

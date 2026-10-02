@@ -392,6 +392,42 @@ export const SupabaseService = {
     return true;
   },
 
+  // 7d. Subscribe to Realtime Vendor Applications
+  subscribeToApplications(callback: (app: VendorApplication) => void) {
+    if (!isSupabaseConfigured || !supabase) return () => {};
+
+    const channel = supabase
+      .channel('public:vendor_applications')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'vendor_applications' },
+        (payload: any) => {
+          if (payload.new) {
+            const a = payload.new;
+            const mapped: VendorApplication = {
+              id: a.id,
+              applicantName: a.contact_person,
+              businessName: a.kitchen_name,
+              phone: a.phone,
+              email: a.email,
+              storeAddress: a.address,
+              ghanaCardNumber: a.ghana_card_number,
+              foodType: a.sample_menu || 'Local Ghanaian',
+              notes: a.description || '',
+              status: a.status || 'pending',
+              appliedAt: a.created_at,
+            };
+            callback(mapped);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase?.removeChannel(channel);
+    };
+  },
+
   // 8. Update Store Settings
   async updateStore(storeId: string, updates: Partial<Store>): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) return false;
