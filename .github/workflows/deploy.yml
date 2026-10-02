@@ -1,4 +1,4 @@
-﻿name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
@@ -32,6 +32,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://rqepidxepeafwjojowzr.supabase.co
+          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxZXBpZHhlcGVhZndqb2pvd3pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4NzY5MjksImV4cCI6MjEwNjQ1MjkyOX0.qIKpleKkREsYv_rRskR9eEcS3pl1an7xnEhKXSz1AKQ
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
