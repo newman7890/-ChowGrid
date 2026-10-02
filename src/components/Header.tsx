@@ -101,15 +101,36 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right Header Navigation */}
           <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-            {/* If Vendor / Admin: Show Back to Marketplace link */}
-            {role !== 'customer' && (
+            {/* If Vendor / Admin: Show Switcher Links in Header */}
+            {role !== 'customer' ? (
               <button
                 onClick={() => setRole('customer')}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
+                className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
                 <User className="w-3.5 h-3.5 text-orange-600" />
                 <span className="hidden sm:inline">Marketplace</span>
               </button>
+            ) : (
+              <>
+                {currentUser?.role === 'vendor' && (
+                  <button
+                    onClick={() => setRole('vendor')}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                  >
+                    <Store className="w-3.5 h-3.5 text-orange-600" />
+                    <span>Kitchen Hub</span>
+                  </button>
+                )}
+                {currentUser?.role === 'admin' && (
+                  <button
+                    onClick={() => setRole('admin')}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="hidden sm:inline">Admin Console</span>
+                  </button>
+                )}
+              </>
             )}
 
             {/* Live Order Indicator (for Customers) */}

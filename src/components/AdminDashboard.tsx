@@ -36,6 +36,8 @@ export const AdminDashboard: React.FC = () => {
     orders,
     applications,
     users,
+    setRole,
+    setActiveVendorStoreId,
     reviewApplication,
     toggleStoreLock,
     updateOrderStatus,
@@ -605,13 +607,25 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100 text-xs">
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setActiveVendorStoreId(store.id);
+                        setRole('vendor');
+                      }}
+                      className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      title="Open Vendor Dashboard for this store"
+                    >
+                      <StoreIcon className="w-3.5 h-3.5" />
+                      <span>Open Kitchen Hub</span>
+                    </button>
+
                     <button
                       onClick={() => renewSubscription(store.id)}
                       className="px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 font-bold rounded-lg transition cursor-pointer"
                     >
-                      Extend Subscription (+30 Days)
+                      Extend (+30d)
                     </button>
                   </div>
 
@@ -624,7 +638,7 @@ export const AdminDashboard: React.FC = () => {
                     }`}
                   >
                     {store.subscriptionStatus === 'suspended' ? <Lock className="w-3.5 h-3.5 text-rose-600" /> : <Unlock className="w-3.5 h-3.5 text-emerald-600" />}
-                    <span>{store.subscriptionStatus === 'suspended' ? 'Unlock Store' : 'Emergency Lock'}</span>
+                    <span>{store.subscriptionStatus === 'suspended' ? 'Unlock' : 'Lock'}</span>
                   </button>
                 </div>
               </div>
