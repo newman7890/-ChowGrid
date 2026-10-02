@@ -97,15 +97,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Ensure browser LocalStorage is completely wiped and never written to
-if (typeof window !== 'undefined') {
-  try {
-    localStorage.clear();
-  } catch (e) {
-    // ignore
-  }
-}
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserAccount[]>([]);
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
@@ -499,11 +490,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const pickupOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const deliveryOtp = Math.floor(1000 + Math.random() * 9000).toString();
     const orderNumber = `#${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `order-${Date.now()}`;
 
     const newOrder: Order = {
-      id: `order-${Date.now()}`,
+      id: orderId,
       orderNumber,
-      customerId: currentUser?.id || `cust-${Date.now()}`,
+      customerId: currentUser?.id || undefined,
       customerName,
       customerPhone,
       deliveryAddress,
@@ -555,7 +547,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addReview = (newReview: Omit<Review, 'id' | 'createdAt'>) => {
     const rev: Review = {
       ...newReview,
-      id: `rev-${Date.now()}`,
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `rev-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
     setReviews((prev) => [rev, ...prev]);
@@ -682,18 +674,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const submitVendorApplication = (
     data: Omit<VendorApplication, 'id' | 'status' | 'appliedAt'>
   ): VendorApplication => {
+    const appId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `app-${Date.now()}`;
     const newApp: VendorApplication = {
       ...data,
-      id: `app-${Date.now()}`,
+      id: appId,
       status: 'pending',
       appliedAt: new Date().toISOString(),
     };
     setApplications((prev) => [newApp, ...prev]);
 
     if (isSupabaseConfigured) {
-      SupabaseService.submitApplication(newApp).catch((e) =>
-        console.warn('Background Supabase application sync failed:', e)
-      );
+      SupabaseService.submitApplication(newApp, currentUser?.id)
+        .then((res) => {
+          if (res.data) {
+            setApplications((prev) => prev.map((a) => (a.id === newApp.id ? res.data! : a)));
+          }
+        })
+        .catch((e) =>
+          console.warn('Background Supabase application sync failed:', e)
+        );
     }
 
     return newApp;
@@ -719,7 +718,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 2. If approved, automatically create a new active Store in the marketplace
     if (status === 'approved') {
-      const storeId = `store-${Date.now()}`;
+      const storeId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `store-${Date.now()}`;
       const newStore: Store = {
         id: storeId,
         vendorId: app.id,

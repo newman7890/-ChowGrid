@@ -108,7 +108,7 @@ export type OrderStatus =
 export interface Order {
   id: string;
   orderNumber: string; // e.g. "#1045"
-  customerId: string;
+  customerId?: string;
   customerName: string;
   customerPhone: string;
   deliveryAddress: string;

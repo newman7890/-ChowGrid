@@ -97,15 +97,12 @@ export const SupabaseService = {
     if (!isSupabaseConfigured || !supabase) return false;
 
     try {
-      const { error: orderError } = await supabase.from('orders').insert({
-        id: order.id,
+      const orderPayload: any = {
         order_number: order.orderNumber,
-        customer_id: order.customerId || null,
         customer_name: order.customerName,
         customer_phone: order.customerPhone,
         delivery_address: order.deliveryAddress,
         customer_notes: order.customerNotes || null,
-        store_id: order.storeId,
         store_name: order.storeName,
         status: order.status,
         subtotal: order.subtotal,
@@ -117,22 +114,46 @@ export const SupabaseService = {
         delivery_otp: order.deliveryOtp,
         estimated_minutes: order.estimatedPrepTime,
         created_at: order.createdAt,
-      });
+      };
+
+      if (order.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.id)) {
+        orderPayload.id = order.id;
+      }
+
+      if (order.storeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.storeId)) {
+        orderPayload.store_id = order.storeId;
+      }
+
+      if (order.customerId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.customerId)) {
+        orderPayload.customer_id = order.customerId;
+      }
+
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('orders')
+        .insert(orderPayload)
+        .select()
+        .single();
 
       if (orderError) throw orderError;
 
+      const orderIdToUse = insertedOrder?.id || order.id;
+
       // Insert line items
       for (const item of order.items) {
+        const itemPayload: any = {
+          order_id: orderIdToUse,
+          food_name: item.name,
+          unit_price: item.unitCalculatedPrice,
+          quantity: item.quantity,
+          special_instructions: item.specialInstructions || null,
+        };
+        if (item.foodItemId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.foodItemId)) {
+          itemPayload.food_item_id = item.foodItemId;
+        }
+
         const { data: insertedItem, error: itemError } = await supabase
           .from('order_items')
-          .insert({
-            order_id: order.id,
-            food_item_id: item.foodItemId,
-            food_name: item.name,
-            unit_price: item.unitCalculatedPrice,
-            quantity: item.quantity,
-            special_instructions: item.specialInstructions || null,
-          })
+          .insert(itemPayload)
           .select()
           .single();
 
@@ -268,11 +289,10 @@ export const SupabaseService = {
   },
 
   // 7. Submit Vendor Application
-  async submitApplication(app: VendorApplication): Promise<boolean> {
-    if (!isSupabaseConfigured || !supabase) return false;
+  async submitApplication(app: VendorApplication, applicantId?: string): Promise<{ success: boolean; data?: VendorApplication; error?: string }> {
+    if (!isSupabaseConfigured || !supabase) return { success: false, error: 'Supabase is not configured' };
 
-    const { error } = await supabase.from('vendor_applications').insert({
-      id: app.id,
+    const payload: any = {
       kitchen_name: app.businessName,
       contact_person: app.applicantName,
       phone: app.phone,
@@ -282,16 +302,44 @@ export const SupabaseService = {
       ghana_card_number: app.ghanaCardNumber,
       momo_payout_number: app.phone,
       sample_menu: app.foodType || null,
-      status: app.status,
-      created_at: app.appliedAt,
-    });
+      status: app.status || 'pending',
+    };
+
+    if (applicantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicantId)) {
+      payload.applicant_id = applicantId;
+    }
+
+    if (app.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(app.id)) {
+      payload.id = app.id;
+    }
+
+    const { data, error } = await supabase
+      .from('vendor_applications')
+      .insert(payload)
+      .select()
+      .single();
 
     if (error) {
       console.error('Error submitting vendor application:', error);
-      return false;
+      return { success: false, error: error.message };
     }
 
-    return true;
+    return {
+      success: true,
+      data: {
+        id: data.id,
+        applicantName: data.contact_person,
+        businessName: data.kitchen_name,
+        phone: data.phone,
+        email: data.email,
+        storeAddress: data.address,
+        ghanaCardNumber: data.ghana_card_number,
+        foodType: data.sample_menu || 'Local Ghanaian',
+        notes: data.description || '',
+        status: data.status || 'pending',
+        appliedAt: data.created_at,
+      },
+    };
   },
 
   // 7b. Fetch all Vendor Applications
@@ -377,9 +425,7 @@ export const SupabaseService = {
 
     const slug = store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now().toString(36);
 
-    const { error } = await supabase.from('stores').insert({
-      id: store.id,
-      vendor_id: store.vendorId || null,
+    const storePayload: any = {
       name: store.name,
       slug: slug,
       description: store.tagline,
@@ -395,7 +441,17 @@ export const SupabaseService = {
       subscription_status: store.subscriptionStatus || 'active',
       subscription_renews_at: store.subscriptionExpiresAt,
       momo_payout_number: store.phone,
-    });
+    };
+
+    if (store.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store.id)) {
+      storePayload.id = store.id;
+    }
+
+    if (store.vendorId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store.vendorId)) {
+      storePayload.vendor_id = store.vendorId;
+    }
+
+    const { error } = await supabase.from('stores').insert(storePayload);
 
     if (error) {
       console.error('Error creating store in Supabase:', error);
@@ -410,9 +466,7 @@ export const SupabaseService = {
     if (!isSupabaseConfigured || !supabase) return false;
 
     try {
-      const { error: itemError } = await supabase.from('food_items').upsert({
-        id: item.id,
-        store_id: item.storeId,
+      const itemPayload: any = {
         name: item.name,
         description: item.description,
         base_price: item.basePrice,
@@ -422,34 +476,66 @@ export const SupabaseService = {
         prep_time_minutes: item.prepTimeMinutes || 20,
         is_available: item.isAvailable,
         updated_at: new Date().toISOString(),
-      });
+      };
+
+      if (item.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+        itemPayload.id = item.id;
+      }
+
+      if (item.storeId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.storeId)) {
+        itemPayload.store_id = item.storeId;
+      }
+
+      const { data: savedItem, error: itemError } = await supabase
+        .from('food_items')
+        .upsert(itemPayload)
+        .select()
+        .single();
 
       if (itemError) throw itemError;
+
+      const itemId = savedItem?.id || item.id;
 
       // If modifier groups exist, sync them
       if (item.modifierGroups && item.modifierGroups.length > 0) {
         for (const grp of item.modifierGroups) {
-          const { error: grpError } = await supabase.from('modifier_groups').upsert({
-            id: grp.id,
-            food_item_id: item.id,
+          const grpPayload: any = {
+            food_item_id: itemId,
             name: grp.name,
             min_selection: grp.minSelection,
             max_selection: grp.maxSelection,
             required: grp.required,
             allow_quantity_multiplier: grp.allowQuantityMultiplier,
-          });
+          };
+          if (grp.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(grp.id)) {
+            grpPayload.id = grp.id;
+          }
+
+          const { data: savedGrp, error: grpError } = await supabase
+            .from('modifier_groups')
+            .upsert(grpPayload)
+            .select()
+            .single();
 
           if (grpError) throw grpError;
 
+          const grpId = savedGrp?.id || grp.id;
+
           if (grp.options && grp.options.length > 0) {
             for (const opt of grp.options) {
-              const { error: optError } = await supabase.from('modifier_options').upsert({
-                id: opt.id,
-                modifier_group_id: grp.id,
+              const optPayload: any = {
+                modifier_group_id: grpId,
                 name: opt.name,
                 price: opt.price,
                 is_default: opt.isDefault,
-              });
+              };
+              if (opt.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(opt.id)) {
+                optPayload.id = opt.id;
+              }
+
+              const { error: optError } = await supabase
+                .from('modifier_options')
+                .upsert(optPayload);
               if (optError) throw optError;
             }
           }
